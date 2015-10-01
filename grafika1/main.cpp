@@ -125,40 +125,22 @@ Color image[screenWidth*screenHeight];	// egy alkalmazås ablaknyi kÊp
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
 void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
-
-	// Peldakent keszitunk egy kepet az operativ memoriaba
-	for (int Y = 0; Y < screenHeight; Y++)
-		for (int X = 0; X < screenWidth; X++)
-			image[Y*screenWidth + X] = Color((float)X / screenWidth, (float)Y / screenHeight, 0);
-
 }
 
 // Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
 void onDisplay() {
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);		// torlesi szin beallitasa
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);		// torlesi szin beallitasa
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
 
-														// ..
-
-														// Peldakent atmasoljuk a kepet a rasztertarba
-	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
-	// Majd rajzolunk egy kek haromszoget
-	glColor3f(0, 0, 1);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-0.2f, -0.2f);
-	glVertex2f(0.2f, -0.2f);
-	glVertex2f(0.0f, 0.2f);
-	glEnd();
-
-	// ...
-
-	glutSwapBuffers();     				// Buffercsere: rajzolas vege
-
+	glutSwapBuffers();// Buffercsere: rajzolas vege
 }
 
 // Billentyuzet esemenyeket lekezelo fuggveny (lenyomas)
 void onKeyboard(unsigned char key, int x, int y) {
-	if (key == 'd') glutPostRedisplay(); 		// d beture rajzold ujra a kepet
+	
+	if (key == ' ') {
+		// TODO zoom in and start moving, disable mouse
+	}
 
 }
 
@@ -169,8 +151,9 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 
 // Eger esemenyeket lekezelo fuggveny
 void onMouse(int button, int state, int x, int y) {
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)   // A GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON illetve GLUT_DOWN / GLUT_UP
-		glutPostRedisplay(); 						 // Ilyenkor rajzold ujra a kepet
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		// TODO put dots on the field and redraw if needed
+	}
 }
 
 // Eger mozgast lekezelo fuggveny
@@ -182,7 +165,6 @@ void onMouseMotion(int x, int y)
 // `Idle' esemenykezelo, jelzi, hogy az ido telik, az Idle esemenyek frekvenciajara csak a 0 a garantalt minimalis ertek
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME);		// program inditasa ota eltelt ido
-
 }
 
 // ...Idaig modosithatod
