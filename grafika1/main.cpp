@@ -184,30 +184,46 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glEnd();
 }
 
-int convertParabolaX(int x, int zoom) {
+int convertParabolaX(int x) {
 	switch (zoom)
 	{
 	case 1:
 		return x * ratio;
 	case 2:
 		return (x * ratio) / zoom + offsetX;
-	default:
-		throw "Invalid argument";
 	}
 }
 
-int convertParabolaY(int y, int zoom) {
+int convertParabolaY(int y) {
 	switch (zoom)
 	{
 	case 1:
 		return fieldHeight - y * ratio;
 	case 2:
 		return fieldHeight - ((y * ratio) / zoom + offsetY);
-		break;
-	default:
-		throw "Invalid argument";
 	}
 }
+
+int convertX(int x) {
+	switch (zoom)
+	{
+	case 1:
+		return x;
+	case 2:
+		return (x - offsetX) * zoom;
+	}
+}
+
+int convertY(int y) {
+	switch (zoom)
+	{
+	case 1:
+		return y;
+	case 2:
+		return (y - (500 - offsetY)) * zoom;
+	}
+}
+
 
 //Pont vonaltol valo tavolsagat szamitja ki
 float distanceFromLine(float x1, float y1, float x2, float y2, float px, float py) {
@@ -240,8 +256,8 @@ void onDisplay() {
 		{
 			for (int x = 0; x < 600; x++)
 			{
-				if (distanceFromPoint(focus->x, focus->y, convertParabolaX(x, zoom), convertParabolaY(y, zoom)) > 
-					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertParabolaX(x, zoom), convertParabolaY(y, zoom))) {
+				if (distanceFromPoint(focus->x, focus->y, convertParabolaX(x), convertParabolaY(y)) > 
+					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertParabolaX(x), convertParabolaY(y))) {
 					image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
 				}
 				else {
@@ -256,7 +272,7 @@ void onDisplay() {
 	Point *current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
-		drawCircle(current->x, current->y, circleRadius, circlePoints);
+		drawCircle(convertX(current->x), convertY(current->y), circleRadius * zoom, circlePoints);
 		current = current->next;
 	}
 
