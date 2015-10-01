@@ -118,6 +118,9 @@ struct Color {
 struct Point {
 	float x;
 	float y;
+	float vx;
+	float vy;
+	long t;
 	Point *next;
 };
 
@@ -133,6 +136,10 @@ const int fieldHeight = 1000;
 const int circlePoints = 10;
 const float circleRadius = 5.0f;
 
+int zoom = 1;
+int offsetX = 250;
+int offsetY = 250;
+
 //Lancolt lista elemek
 Point *root;
 Point *last;
@@ -143,6 +150,7 @@ Point *focus;
 
 Color image[screenWidth*screenHeight];	// egy alkalmazas ablaknyi kep
 
+//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
 void drawCircle(float cx, float cy, float r, int segments)
 {
 	float wx = (fieldWidth / 2 - cx) / -(fieldWidth / 2);
@@ -176,10 +184,37 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glEnd();
 }
 
+int convertParabolaX(int x, int zoom) {
+	switch (zoom)
+	{
+	case 1:
+		return x * ratio;
+	case 2:
+		return (x * ratio) / zoom + offsetX;
+	default:
+		throw "Invalid argument";
+	}
+}
+
+int convertParabolaY(int y, int zoom) {
+	switch (zoom)
+	{
+	case 1:
+		return fieldHeight - y * ratio;
+	case 2:
+		return fieldHeight - ((y * ratio) / zoom + offsetY);
+		break;
+	default:
+		throw "Invalid argument";
+	}
+}
+
+//Pont vonaltol valo tavolsagat szamitja ki
 float distanceFromLine(float x1, float y1, float x2, float y2, float px, float py) {
 	return fabsf((y2 - y1)*px - (x2 - x1)*py + x2*y1 - y2*x1) / sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
 }
 
+//Pont ponttol valo tavolsagat szamitja ki
 float distanceFromPoint(float x1, float y1, float x2, float y2) {
 	return sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
 }
@@ -197,21 +232,20 @@ void onDisplay() {
 	if (pointCount >= 3) {
 
 		//There is a parabola
-		if (pointCount == 3) {
-			Point *p1 = root;
-			Point *p2 = root->next;
-			Point *focus = root->next->next;
+		Point *p1 = root;
+		Point *p2 = root->next;
+		Point *focus = root->next->next;
 
-			for (int y = 0; y < 600; y++)
+		for (int y = 0; y < 600; y++)
+		{
+			for (int x = 0; x < 600; x++)
 			{
-				for (int x = 0; x < 600; x++)
-				{
-					if (distanceFromPoint(focus->x, focus->y, x * ratio, fieldHeight - y * ratio) > distanceFromLine(p1->x, p1->y, p2->x, p2->y, x * ratio, fieldHeight - y * ratio)) {
-						image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
-					}
-					else {
-						image[y*screenWidth + x] = Color(1, 1, 0);
-					}
+				if (distanceFromPoint(focus->x, focus->y, convertParabolaX(x, zoom), convertParabolaY(y, zoom)) > 
+					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertParabolaX(x, zoom), convertParabolaY(y, zoom))) {
+					image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
+				}
+				else {
+					image[y*screenWidth + x] = Color(1, 1, 0);
 				}
 			}
 		}
@@ -233,8 +267,24 @@ void onDisplay() {
 void onKeyboard(unsigned char key, int x, int y) {
 	
 	if (key == ' ') {
-		// TODO zoom in and start moving, disable mouse
+		// TODO zoom in and start moving, disable all inputs
+		zoom = 2;
+		glutPostRedisplay();
 	}
+
+	if (key == 'w') {
+		offsetY++;
+	}
+	if (key == 'a') {
+		offsetX--;
+	}
+	if (key == 's') {
+		offsetY--;
+	}
+	if (key == 'd') {
+		offsetX++;
+	}
+	glutPostRedisplay();
 
 }
 
@@ -246,7 +296,6 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 // Eger esemenyeket lekezelo fuggveny
 void onMouse(int button, int state, int x, int y) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		// TODO put dots on the field and redraw if needed
 
 		if (pointCount == 0) {
 			root = new Point;
@@ -258,6 +307,7 @@ void onMouse(int button, int state, int x, int y) {
 
 		last->x = x * ratio;
 		last->y = y * ratio;
+		last->t = glutGet(GLUT_ELAPSED_TIME);
 		pointCount++;
 
 		if (pointCount == 3) {
