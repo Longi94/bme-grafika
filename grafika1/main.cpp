@@ -6,7 +6,7 @@
 // Tilos:
 // - mast "beincludolni", illetve mas konyvtarat hasznalni
 // - faljmuveleteket vegezni (printf is fajlmuvelet!)
-// - new operatort hivni az onInitialization f√üggv√änyt kiv√äve, a lefoglalt adat korrekt felszabad√≠t√•sa n√älk√ül 
+// - new operatort hivni az onInitialization fﬂggv nyt kiv ve, a lefoglalt adat korrekt felszabadÌtÂsa n lkﬂl 
 // - felesleges programsorokat a beadott programban hagyni
 // - tovabbi kommenteket a beadott programba irni a forrasmegjelolest kommentjeit kiveve
 // ---------------------------------------------------------------------------------------------
@@ -115,11 +115,56 @@ struct Color {
 	}
 };
 
-const int screenWidth = 600;	// alkalmaz√•s ablak felbont√•sa
+struct Point {
+	int x;
+	int y;
+	Point *next;
+};
+
+const int screenWidth = 600;	// alkalmazÂs ablak felbontÂsa
 const int screenHeight = 600;
 
+const int circlePoints = 50;
+const float circleRadius = 5.0f / 1000.0f;
+const float polygonAngle = M_PI / 50.0f;
 
-Color image[screenWidth*screenHeight];	// egy alkalmaz√•s ablaknyi k√äp
+Point *root;
+Point *last;
+int pointCount = 0;
+
+Color image[screenWidth*screenHeight];	// egy alkalmazÂs ablaknyi k p
+
+void drawCircle(float cx, float cy, float r, int num_segments)
+{
+	float wx = (300.0f - cx) / -300.0f;
+	float wy = (300.0f - cy) / 300.0f;
+
+	glColor3f(1, 0, 0);
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < num_segments; i++)
+	{
+		float theta = 2.0f * M_PI * float(i) / float(num_segments);//get the current angle 
+
+		float x = r * cosf(theta);//calculate the x component 
+		float y = r * sinf(theta);//calculate the y component 
+
+		glVertex2f(x + wx, y + wy);//output vertex 
+	}
+	glEnd();
+
+	glColor3f(1, 1, 1);
+	glBegin(GL_LINE_LOOP);
+	for (int i = 0; i < num_segments; i++)
+	{
+		float theta = 2.0f * M_PI * float(i) / float(num_segments);//get the current angle 
+
+		float x = r * cosf(theta);//calculate the x component 
+		float y = r * sinf(theta);//calculate the y component 
+
+		glVertex2f(x + wx, y + wy);//output vertex 
+	}
+	glEnd();
+}
 
 
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
@@ -129,8 +174,15 @@ void onInitialization() {
 
 // Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
 void onDisplay() {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);		// torlesi szin beallitasa
+	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
+
+	Point *current = root;
+	for (int i = 0; i < pointCount; i++)
+	{
+		drawCircle(current->x, current->y, circleRadius, circlePoints);
+		current = current->next;
+	}
 
 	glutSwapBuffers();// Buffercsere: rajzolas vege
 }
@@ -153,6 +205,20 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 void onMouse(int button, int state, int x, int y) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		// TODO put dots on the field and redraw if needed
+
+		if (pointCount == 0) {
+			root = new Point;
+			last = root;
+		} else {
+			last->next = new Point;
+			last = last->next;
+		}
+
+		last->x = x;
+		last->y = y;
+		pointCount++;
+
+		glutPostRedisplay();
 	}
 }
 
