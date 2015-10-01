@@ -116,39 +116,47 @@ struct Color {
 };
 
 struct Point {
-	int x;
-	int y;
+	float x;
+	float y;
 	Point *next;
 };
 
-const int screenWidth = 600;	// alkalmazås ablak felbontåsa
+const int screenWidth = 600;	// alkalmazas ablak felbontasa
 const int screenHeight = 600;
 
-const int circlePoints = 10;
-const float circleRadius = 5.0f / 1000.0f;
-const float polygonAngle = M_PI / 50.0f;
+const float ratio = 1000.0f / 600.0f;
 
+const int fieldWidth = 1000;
+const int fieldHeight = 1000;
+
+//Pontokhoz tartozo konstansok
+const int circlePoints = 10;
+const float circleRadius = 5.0f;
+
+//Lancolt lista elemek
 Point *root;
 Point *last;
 int pointCount = 0;
 
+//A parabola fokusz pontja
 Point *focus;
 
-Color image[screenWidth*screenHeight];	// egy alkalmazås ablaknyi kÊp
+Color image[screenWidth*screenHeight];	// egy alkalmazas ablaknyi kep
 
-void drawCircle(float cx, float cy, float r, int num_segments)
+void drawCircle(float cx, float cy, float r, int segments)
 {
-	float wx = (300.0f - cx) / -300.0f;
-	float wy = (300.0f - cy) / 300.0f;
+	float wx = (fieldWidth / 2 - cx) / -(fieldWidth / 2);
+	float wy = (fieldHeight / 2 - cy) / (fieldHeight / 2);
+	float wr = r / 1000.0f;
 
 	glColor3f(1, 0, 0);
 	glBegin(GL_POLYGON);
-	for (int i = 0; i < num_segments; i++)
+	for (int i = 0; i < segments; i++)
 	{
-		float theta = 2.0f * M_PI * float(i) / float(num_segments);//get the current angle 
+		float theta = 2.0f * M_PI * float(i) / float(segments);//get the current angle 
 
-		float x = r * cosf(theta);//calculate the x component 
-		float y = r * sinf(theta);//calculate the y component 
+		float x = wr * cosf(theta);//calculate the x component 
+		float y = wr * sinf(theta);//calculate the y component 
 
 		glVertex2f(x + wx, y + wy);//output vertex 
 	}
@@ -156,12 +164,12 @@ void drawCircle(float cx, float cy, float r, int num_segments)
 
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_LOOP);
-	for (int i = 0; i < num_segments; i++)
+	for (int i = 0; i < segments; i++)
 	{
-		float theta = 2.0f * M_PI * float(i) / float(num_segments);//get the current angle 
+		float theta = 2.0f * M_PI * float(i) / float(segments);//get the current angle 
 
-		float x = r * cosf(theta);//calculate the x component 
-		float y = r * sinf(theta);//calculate the y component 
+		float x = wr * cosf(theta);//calculate the x component 
+		float y = wr * sinf(theta);//calculate the y component 
 
 		glVertex2f(x + wx, y + wy);//output vertex 
 	}
@@ -198,7 +206,7 @@ void onDisplay() {
 			{
 				for (int x = 0; x < 600; x++)
 				{
-					if (distanceFromPoint(focus->x, focus->y, x, screenHeight - y) > distanceFromLine(p1->x, p1->y, p2->x, p2->y, x, screenHeight - y)) {
+					if (distanceFromPoint(focus->x, focus->y, x * ratio, fieldHeight - y * ratio) > distanceFromLine(p1->x, p1->y, p2->x, p2->y, x * ratio, fieldHeight - y * ratio)) {
 						image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
 					}
 					else {
@@ -248,8 +256,8 @@ void onMouse(int button, int state, int x, int y) {
 			last = last->next;
 		}
 
-		last->x = x;
-		last->y = y;
+		last->x = x * ratio;
+		last->y = y * ratio;
 		pointCount++;
 
 		if (pointCount == 3) {
