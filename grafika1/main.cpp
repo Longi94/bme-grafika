@@ -124,13 +124,15 @@ struct Point {
 const int screenWidth = 600;	// alkalmazås ablak felbontåsa
 const int screenHeight = 600;
 
-const int circlePoints = 50;
+const int circlePoints = 10;
 const float circleRadius = 5.0f / 1000.0f;
 const float polygonAngle = M_PI / 50.0f;
 
 Point *root;
 Point *last;
 int pointCount = 0;
+
+Point *focus;
 
 Color image[screenWidth*screenHeight];	// egy alkalmazås ablaknyi kÊp
 
@@ -166,6 +168,13 @@ void drawCircle(float cx, float cy, float r, int num_segments)
 	glEnd();
 }
 
+float distanceFromLine(float x1, float y1, float x2, float y2, float px, float py) {
+	return fabsf((y2 - y1)*px - (x2 - x1)*py + x2*y1 - y2*x1) / sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
+}
+
+float distanceFromPoint(float x1, float y1, float x2, float y2) {
+	return sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
+}
 
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
 void onInitialization() {
@@ -176,6 +185,31 @@ void onInitialization() {
 void onDisplay() {
 	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
+
+	if (pointCount >= 3) {
+
+		//There is a parabola
+		if (pointCount == 3) {
+			Point *p1 = root;
+			Point *p2 = root->next;
+			Point *focus = root->next->next;
+
+			for (int y = 0; y < 600; y++)
+			{
+				for (int x = 0; x < 600; x++)
+				{
+					if (distanceFromPoint(focus->x, focus->y, x, screenHeight - y) > distanceFromLine(p1->x, p1->y, p2->x, p2->y, x, screenHeight - y)) {
+						image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
+					}
+					else {
+						image[y*screenWidth + x] = Color(1, 1, 0);
+					}
+				}
+			}
+		}
+
+		glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
+	}
 
 	Point *current = root;
 	for (int i = 0; i < pointCount; i++)
@@ -217,6 +251,10 @@ void onMouse(int button, int state, int x, int y) {
 		last->x = x;
 		last->y = y;
 		pointCount++;
+
+		if (pointCount == 3) {
+			focus = last;
+		}
 
 		glutPostRedisplay();
 	}
