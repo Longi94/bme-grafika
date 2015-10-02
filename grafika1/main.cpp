@@ -306,35 +306,44 @@ void findFirstIntersection() {
 	Point *focus = root->next->next;
 
 	float step = (cm2->t - cm1->t) / 1000.0f;
-	float x = -1;
-	float y = -1;
 
-	for (float t = cm1->t; t < cm2->t && x == -1 && y == -1; t += step)
+	float x1 = -1;
+	float y1 = -1;
+	float x2 = -1;
+	float y2 = -1;
+
+	for (float t = cm1->t; t < cm2->t && x2 == -1 && y2 == -1; t += step)
 	{
 		Point curve = getHermiteCurve(cm1, t);
 
 		if (distanceFromPoint(focus->x, focus->y, curve.x, curve.y) <
 			distanceFromLine(p1->x, p1->y, p2->x, p2->y, curve.x, curve.y)) {
-			x = curve.x;
-			y = curve.y;
+			x2 = curve.x;
+			y2 = curve.y;
+		}
+		else {
+			x1 = curve.x;
+			y1 = curve.y;
 		}
 	}
 
-	float wx = (fieldWidth / 2 - x) / -(fieldWidth / 2);
-	float wy = (fieldHeight / 2 - y) / (fieldHeight / 2);
-	float wr = circleRadius / 500.0f;
+	float m = (y2-y1) / (x2-x1);
+	float b = y1 - m*x1;
+
+	float splineTangentX1 = 0;
+	float splineTangentY1 = b;
+	float splineTangentX2 = 1000.0f;
+	float splineTangentY2 = m*splineTangentX2 + b;
+
+	float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
+	float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
+	float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
+	float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
 
 	glColor3f(0, 1, 0);
-	glBegin(GL_POLYGON);
-	for (int i = 0; i < circlePoints; i++)
-	{
-		float theta = 2.0f * M_PI * float(i) / float(circlePoints);//get the current angle 
-
-		float x = wr * cosf(theta);//calculate the x component 
-		float y = wr * sinf(theta);//calculate the y component 
-
-		glVertex2f(x + wx, y + wy);//output vertex 
-	}
+	glBegin(GL_LINES);
+	glVertex2f(wx1, wy1);
+	glVertex2f(wx2, wy2);
 	glEnd();
 }
 
