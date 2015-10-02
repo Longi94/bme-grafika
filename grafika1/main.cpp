@@ -61,37 +61,6 @@
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
-
-//--------------------------------------------------------
-// 3D Vektor
-//--------------------------------------------------------
-struct Vector {
-	float x, y, z;
-
-	Vector() {
-		x = y = z = 0;
-	}
-	Vector(float x0, float y0, float z0 = 0) {
-		x = x0; y = y0; z = z0;
-	}
-	Vector operator*(float a) {
-		return Vector(x * a, y * a, z * a);
-	}
-	Vector operator+(const Vector& v) {
-		return Vector(x + v.x, y + v.y, z + v.z);
-	}
-	Vector operator-(const Vector& v) {
-		return Vector(x - v.x, y - v.y, z - v.z);
-	}
-	float operator*(const Vector& v) { 	// dot product
-		return (x * v.x + y * v.y + z * v.z);
-	}
-	Vector operator%(const Vector& v) { 	// cross product
-		return Vector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
-	}
-	float Length() { return sqrt(x * x + y * y + z * z); }
-};
-
 //--------------------------------------------------------
 // Spektrum illetve szin
 //--------------------------------------------------------
@@ -116,12 +85,39 @@ struct Color {
 };
 
 struct Point {
-	float x;
-	float y;
-	float vx;
-	float vy;
+	float x, y;
 	long t;
-	Point *next;
+	Point* next;
+	Point* previous;
+
+	Point() {
+		x = y = 0;
+		t = 0;
+		next = previous = nullptr;
+	}
+
+	Point(float x0, float y0) {
+		x = x0; y = y0; t = 0;
+		next = previous = nullptr;
+	}
+
+	Point(float x0, float y0, float t0) {
+		x = x0; y = y0; t = t0;
+		next = previous = nullptr;
+	}
+
+	Point operator*(float a) {
+		return Point(x * a, y * a);
+	}
+	Point operator+(const Point& p) {
+		return Point(x + p.x, y + p.y);
+	}
+	Point operator-(const Point& p) {
+		return Point(x - p.x, y - p.y);
+	}
+	Point operator/(float a) {
+		return Point(x / a, y / a);
+	}
 };
 
 const int screenWidth = 600;	// alkalmazas ablak felbontasa
@@ -218,6 +214,67 @@ float distanceFromPoint(float x1, float y1, float x2, float y2) {
 	return sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
 }
 
+Point getVelocity(Point* p) {
+	if (p == root || p == last) return Point(0, 0);
+
+	return (((*(p->next) - *p)/(p->next->t - p->t)) + 
+		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
+}
+
+Point a3(Point* p) {
+	float deltaT = p->next->t - p->t;
+	return
+		(((*p - *(p->next)) * 2) / powf(deltaT, 3)) +
+		((getVelocity(p->next) + getVelocity(p)) / powf(deltaT, 2));
+}
+
+Point a2(Point* p) {
+	float deltaT = p->next->t - p->t;
+	return
+		(((*(p->next) - *p) * 3) / powf(deltaT, 2)) -
+		((getVelocity(p->next) + getVelocity(p) * 2) / deltaT);
+}
+
+Point a1(Point* p) {
+	return getVelocity(p);
+}
+
+Point a0(Point* p) {
+	return *p;
+}
+
+Point getHermiteCurve(Point* p, float t) {
+	float deltaT = t - p->t;
+	return
+		a3(p) * powf(deltaT, 3) +
+		a2(p) * powf(deltaT, 2) +
+		a1(p) * deltaT +
+		a0(p);
+}
+
+void drawCatmullRom() {
+	glColor3f(1, 1, 1);
+	glBegin(GL_LINE_STRIP);
+
+	Point *current = root;
+	for (int i = 0; i < pointCount - 1; i++)
+	{
+		float step = (current->next->t - current->t) / 1000.0f;
+		for (float t = current->t; t < current->next->t; t += step)
+		{
+			Point curve = getHermiteCurve(current, t);
+
+			float wx = (fieldWidth / 2 - curve.x) / -(fieldWidth / 2);
+			float wy = (fieldHeight / 2 - curve.y) / (fieldHeight / 2);
+
+			glVertex2f(wx, wy);
+		}
+		current = current->next;
+	}
+
+	glEnd();
+}
+
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
 void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
@@ -228,9 +285,8 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
 
+														//Parabola rajzolasa
 	if (pointCount >= 3) {
-
-		//There is a parabola
 		Point *p1 = root;
 		Point *p2 = root->next;
 		Point *focus = root->next->next;
@@ -252,6 +308,12 @@ void onDisplay() {
 		glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
 	}
 
+	//Catmull-rom spline rajzolasa
+	if (pointCount >= 2) {
+		drawCatmullRom();
+	}
+
+	//Pontok rajzolasa
 	Point *current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
@@ -298,19 +360,21 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 
 // Eger esemenyeket lekezelo fuggveny
 void onMouse(int button, int state, int x, int y) {
+
+	if (zoom == 2) return;
+
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 
 		if (pointCount == 0) {
-			root = new Point;
+			root = new Point(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
 			last = root;
-		} else {
-			last->next = new Point;
-			last = last->next;
 		}
-
-		last->x = x * ratio;
-		last->y = y * ratio;
-		last->t = glutGet(GLUT_ELAPSED_TIME);
+		else {
+			Point* previous = last;
+			last->next = new Point(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
+			last = last->next;
+			last->previous = previous;
+		}
 		pointCount++;
 
 		if (pointCount == 3) {
