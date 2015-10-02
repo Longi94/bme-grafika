@@ -442,6 +442,9 @@ void onMouse(int button, int state, int x, int y) {
 			last->next = new Point(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
 			last = last->next;
 			last->previous = previous;
+
+			last->next = root;
+			root->previous = last;
 		}
 		pointCount++;
 
