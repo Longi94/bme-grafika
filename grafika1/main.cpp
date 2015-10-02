@@ -6,7 +6,7 @@
 // Tilos:
 // - mast "beincludolni", illetve mas konyvtarat hasznalni
 // - faljmuveleteket vegezni (printf is fajlmuvelet!)
-// - new operatort hivni az onInitialization fﬂggv nyt kiv ve, a lefoglalt adat korrekt felszabadÌtÂsa n lkﬂl 
+// - new operatort hivni az onInitialization fﬂggv?nyt kiv?ve, a lefoglalt adat korrekt felszabadÌt?sa n?lkﬂl 
 // - felesleges programsorokat a beadott programban hagyni
 // - tovabbi kommenteket a beadott programba irni a forrasmegjelolest kommentjeit kiveve
 // ---------------------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ Point *focus;
 
 Color image[screenWidth*screenHeight];	// egy alkalmazas ablaknyi kep
 
-//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
+										//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
 void drawCircle(float cx, float cy, float r, int segments)
 {
 	float wx = (fieldWidth / 2 - cx) / -(fieldWidth / 2);
@@ -184,46 +184,29 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glEnd();
 }
 
-int convertParabolaX(int x) {
+int convertPixelX(int x, int zoom) {
 	switch (zoom)
 	{
 	case 1:
 		return x * ratio;
 	case 2:
 		return (x * ratio) / zoom + offsetX;
+	default:
+		throw "Invalid argument";
 	}
 }
 
-int convertParabolaY(int y) {
+int convertPixelY(int y, int zoom) {
 	switch (zoom)
 	{
 	case 1:
 		return fieldHeight - y * ratio;
 	case 2:
 		return fieldHeight - ((y * ratio) / zoom + offsetY);
+	default:
+		throw "Invalid argument";
 	}
 }
-
-int convertX(int x) {
-	switch (zoom)
-	{
-	case 1:
-		return x;
-	case 2:
-		return (x - offsetX) * zoom;
-	}
-}
-
-int convertY(int y) {
-	switch (zoom)
-	{
-	case 1:
-		return y;
-	case 2:
-		return (y - (500 - offsetY)) * zoom;
-	}
-}
-
 
 //Pont vonaltol valo tavolsagat szamitja ki
 float distanceFromLine(float x1, float y1, float x2, float y2, float px, float py) {
@@ -256,8 +239,8 @@ void onDisplay() {
 		{
 			for (int x = 0; x < 600; x++)
 			{
-				if (distanceFromPoint(focus->x, focus->y, convertParabolaX(x), convertParabolaY(y)) > 
-					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertParabolaX(x), convertParabolaY(y))) {
+				if (distanceFromPoint(focus->x, focus->y, convertPixelX(x, zoom), convertPixelY(y, zoom)) >
+					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x, zoom), convertPixelY(y, zoom))) {
 					image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
 				}
 				else {
@@ -272,7 +255,7 @@ void onDisplay() {
 	Point *current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
-		drawCircle(convertX(current->x), convertY(current->y), circleRadius * zoom, circlePoints);
+		drawCircle(current->x, current->y, circleRadius, circlePoints);
 		current = current->next;
 	}
 
@@ -281,24 +264,28 @@ void onDisplay() {
 
 // Billentyuzet esemenyeket lekezelo fuggveny (lenyomas)
 void onKeyboard(unsigned char key, int x, int y) {
-	
-	if (key == ' ') {
+
+	if (key == ' '  && zoom != 2) {
 		// TODO zoom in and start moving, disable all inputs
 		zoom = 2;
-		glutPostRedisplay();
+		gluOrtho2D(-0.5, 0.5, -0.5, 0.5);
 	}
 
 	if (key == 'w') {
 		offsetY++;
+		glTranslatef(0, -0.002f, 0);
 	}
 	if (key == 'a') {
 		offsetX--;
+		glTranslatef(0.002f, 0, 0);
 	}
 	if (key == 's') {
 		offsetY--;
+		glTranslatef(0, 0.002f, 0);
 	}
 	if (key == 'd') {
 		offsetX++;
+		glTranslatef(-0.002f, 0, 0);
 	}
 	glutPostRedisplay();
 
