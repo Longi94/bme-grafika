@@ -61,6 +61,7 @@
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
+
 //--------------------------------------------------------
 // Spektrum illetve szin
 //--------------------------------------------------------
@@ -84,6 +85,9 @@ struct Color {
 	}
 };
 
+//--------------------------------------------------------
+// 2D-s pontok, ketiranyba lancolt listakent hasznalhato.
+//--------------------------------------------------------
 struct Point {
 	float x, y;
 	long t;
@@ -120,11 +124,14 @@ struct Point {
 	}
 };
 
-const int screenWidth = 600;	// alkalmazas ablak felbontasa
+// alkalmazas ablak felbontasa
+const int screenWidth = 600;
 const int screenHeight = 600;
 
+//Mezo es ablak meret arany
 const float ratio = 1000.0f / 600.0f;
 
+//A mezo merete meterben
 const int fieldWidth = 1000;
 const int fieldHeight = 1000;
 
@@ -132,21 +139,26 @@ const int fieldHeight = 1000;
 const int circlePoints = 10;
 const float circleRadius = 5.0f;
 
+//Nagyitas es eltolas merteke. A hatter rajzolasahoz kell
 int zoom = 1;
 int offsetX = 250;
 int offsetY = 250;
 
 //Lancolt lista elemek
-Point *root;
-Point *last;
+Point* root;
+Point* last;
 int pointCount = 0;
 
 //A parabola fokusz pontja
-Point *focus;
+Point* focus;
 
-Color image[screenWidth*screenHeight];	// egy alkalmazas ablaknyi kep
+//A parabola es a spline elso metszespontja
+Point* intersection;
 
-										//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
+// egy alkalmazas ablaknyi kep
+Color image[screenWidth*screenHeight];
+
+//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
 void drawCircle(float cx, float cy, float r, int segments)
 {
 	float wx = (fieldWidth / 2 - cx) / -(fieldWidth / 2);
@@ -180,7 +192,8 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glEnd();
 }
 
-int convertPixelX(int x, int zoom) {
+//X koordinatat at konvertal mezo koordinatava
+int convertPixelX(int x) {
 	switch (zoom)
 	{
 	case 1:
@@ -192,7 +205,8 @@ int convertPixelX(int x, int zoom) {
 	}
 }
 
-int convertPixelY(int y, int zoom) {
+//Y koordinatat atkonvertal mezo koordinatava
+int convertPixelY(int y) {
 	switch (zoom)
 	{
 	case 1:
@@ -214,6 +228,7 @@ float distanceFromPoint(float x1, float y1, float x2, float y2) {
 	return sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
 }
 
+//Kontrol pont sebessegenek kiszamitasa
 Point getVelocity(Point* p) {
 	if (p == root || p == last) return Point(0, 0);
 
@@ -221,6 +236,7 @@ Point getVelocity(Point* p) {
 		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
 }
 
+//a3-as egyutthato
 Point a3(Point* p) {
 	float deltaT = p->next->t - p->t;
 	return
@@ -228,6 +244,7 @@ Point a3(Point* p) {
 		((getVelocity(p->next) + getVelocity(p)) / powf(deltaT, 2));
 }
 
+//a2-es egyutthato
 Point a2(Point* p) {
 	float deltaT = p->next->t - p->t;
 	return
@@ -235,14 +252,17 @@ Point a2(Point* p) {
 		((getVelocity(p->next) + getVelocity(p) * 2) / deltaT);
 }
 
+//a1-es egyutthato
 Point a1(Point* p) {
 	return getVelocity(p);
 }
 
+//a0-as egyutthato
 Point a0(Point* p) {
 	return *p;
 }
 
+//Ket pont kozottti Hermite interpolacio pontjait hatarozza meg.
 Point getHermiteCurve(Point* p, float t) {
 	float deltaT = t - p->t;
 	return
@@ -252,6 +272,7 @@ Point getHermiteCurve(Point* p, float t) {
 		a0(p);
 }
 
+//Felrajzolja a Catmull-Rom spline a pontokhoz.
 void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
@@ -275,6 +296,48 @@ void drawCatmullRom() {
 	glEnd();
 }
 
+//Megkeresi a parabola es a CM spline elso metszes pontjat (masodik es harmadik pont kozott)
+void findFirstIntersection() {
+	Point* cm1 = root->next;
+	Point* cm2 = cm1->next;
+
+	Point *p1 = root;
+	Point *p2 = root->next;
+	Point *focus = root->next->next;
+
+	float step = (cm2->t - cm1->t) / 1000.0f;
+	float x = -1;
+	float y = -1;
+
+	for (float t = cm1->t; t < cm2->t && x == -1 && y == -1; t += step)
+	{
+		Point curve = getHermiteCurve(cm1, t);
+
+		if (distanceFromPoint(focus->x, focus->y, curve.x, curve.y) <
+			distanceFromLine(p1->x, p1->y, p2->x, p2->y, curve.x, curve.y)) {
+			x = curve.x;
+			y = curve.y;
+		}
+	}
+
+	float wx = (fieldWidth / 2 - x) / -(fieldWidth / 2);
+	float wy = (fieldHeight / 2 - y) / (fieldHeight / 2);
+	float wr = circleRadius / 500.0f;
+
+	glColor3f(0, 1, 0);
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < circlePoints; i++)
+	{
+		float theta = 2.0f * M_PI * float(i) / float(circlePoints);//get the current angle 
+
+		float x = wr * cosf(theta);//calculate the x component 
+		float y = wr * sinf(theta);//calculate the y component 
+
+		glVertex2f(x + wx, y + wy);//output vertex 
+	}
+	glEnd();
+}
+
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
 void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
@@ -285,7 +348,7 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
 
-														//Parabola rajzolasa
+	//Parabola rajzolasa
 	if (pointCount >= 3) {
 		Point *p1 = root;
 		Point *p2 = root->next;
@@ -295,8 +358,8 @@ void onDisplay() {
 		{
 			for (int x = 0; x < 600; x++)
 			{
-				if (distanceFromPoint(focus->x, focus->y, convertPixelX(x, zoom), convertPixelY(y, zoom)) >
-					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x, zoom), convertPixelY(y, zoom))) {
+				if (distanceFromPoint(focus->x, focus->y, convertPixelX(x), convertPixelY(y)) >
+					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x), convertPixelY(y))) {
 					image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
 				}
 				else {
@@ -319,6 +382,11 @@ void onDisplay() {
 	{
 		drawCircle(current->x, current->y, circleRadius, circlePoints);
 		current = current->next;
+	}
+
+	//Metszepont megkeresese
+	if (pointCount >= 3) {
+		findFirstIntersection();
 	}
 
 	glutSwapBuffers();// Buffercsere: rajzolas vege
