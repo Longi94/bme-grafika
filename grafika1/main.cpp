@@ -230,7 +230,7 @@ float distanceFromPoint(float x1, float y1, float x2, float y2) {
 
 //Kontrol pont sebessegenek kiszamitasa
 Point getVelocity(Point* p) {
-	if (p == root || p == last) return Point(0, 0);
+	if (p == root) return Point(0, 0);
 
 	return (((*(p->next) - *p)/(p->next->t - p->t)) + 
 		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
@@ -238,7 +238,7 @@ Point getVelocity(Point* p) {
 
 //a3-as egyutthato
 Point a3(Point* p) {
-	float deltaT = p->next->t - p->t;
+	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
 		(((*p - *(p->next)) * 2) / powf(deltaT, 3)) +
 		((getVelocity(p->next) + getVelocity(p)) / powf(deltaT, 2));
@@ -246,7 +246,7 @@ Point a3(Point* p) {
 
 //a2-es egyutthato
 Point a2(Point* p) {
-	float deltaT = p->next->t - p->t;
+	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
 		(((*(p->next) - *p) * 3) / powf(deltaT, 2)) -
 		((getVelocity(p->next) + getVelocity(p) * 2) / deltaT);
@@ -278,10 +278,13 @@ void drawCatmullRom() {
 	glBegin(GL_LINE_STRIP);
 
 	Point *current = root;
-	for (int i = 0; i < pointCount - 1; i++)
+	for (int i = 0; i < (pointCount == 2 ? 1 : pointCount); i++)
 	{
-		float step = (current->next->t - current->t) / 1000.0f;
-		for (float t = current->t; t < current->next->t; t += step)
+
+		float t2 = current == last ? current->t + current->next->t : current->next->t;
+		float step = (t2 - current->t) / 1000.0f;
+
+		for (float t = current->t; t < t2; t += step)
 		{
 			Point curve = getHermiteCurve(current, t);
 
