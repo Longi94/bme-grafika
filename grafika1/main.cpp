@@ -273,6 +273,14 @@ Point getHermiteCurve(Point* p, float t) {
 		a0(p);
 }
 
+Point getSplineTangent(Point* p, float t) {
+	float deltaT = t - p->t;
+	return
+		a3(p) * 3 * powf(deltaT, 2) +
+		a2(p) * 2 * deltaT +
+		a1(p);
+}
+
 //Felrajzolja a Catmull-Rom spline a pontokhoz.
 void drawCatmullRom() {
 	glColor3f(1, 1, 1);
@@ -305,50 +313,48 @@ void findFirstIntersection() {
 	Point* cm1 = root->next;
 	Point* cm2 = cm1->next;
 
-	Point *p1 = root;
-	Point *p2 = root->next;
-	Point *focus = root->next->next;
+	Point* l1 = root;
+	Point* l2 = root->next;
+	Point* focus = root->next->next;
 
 	float step = (cm2->t - cm1->t) / 1000.0f;
 
-	float x1 = -1;
-	float y1 = -1;
-	float x2 = -1;
-	float y2 = -1;
+	float t = cm1->t;
 
-	for (float t = cm1->t; t < cm2->t && x2 == -1 && y2 == -1; t += step)
-	{
+	bool found = false;
+
+	while (t < cm2->t && !found) {
+
 		Point curve = getHermiteCurve(cm1, t);
 
 		if (distanceFromPoint(focus->x, focus->y, curve.x, curve.y) <
-			distanceFromLine(p1->x, p1->y, p2->x, p2->y, curve.x, curve.y)) {
-			x2 = curve.x;
-			y2 = curve.y;
+			distanceFromLine(l1->x, l1->y, l2->x, l2->y, curve.x, curve.y)) {
+
+			found = true;
+
+			Point tangent = getSplineTangent(cm1, t);
+
+			float m = tangent.y / tangent.x;
+			float b = curve.y + tangent.y - m*(curve.x + tangent.x);
+
+			float splineTangentX1 = 0;
+			float splineTangentY1 = b;
+			float splineTangentX2 = 1000.0f;
+			float splineTangentY2 = m*splineTangentX2 + b;
+
+			float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
+			float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
+			float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
+			float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
+
+			glColor3f(0, 1, 0);
+			glBegin(GL_LINES);
+			glVertex2f(wx1, wy1);
+			glVertex2f(wx2, wy2);
+			glEnd();
 		}
-		else {
-			x1 = curve.x;
-			y1 = curve.y;
-		}
+		t += step;
 	}
-
-	float m = (y2-y1) / (x2-x1);
-	float b = y1 - m*x1;
-
-	float splineTangentX1 = 0;
-	float splineTangentY1 = b;
-	float splineTangentX2 = 1000.0f;
-	float splineTangentY2 = m*splineTangentX2 + b;
-
-	float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
-	float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
-	float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
-	float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
-
-	glColor3f(0, 1, 0);
-	glBegin(GL_LINES);
-	glVertex2f(wx1, wy1);
-	glVertex2f(wx2, wy2);
-	glEnd();
 }
 
 // Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
