@@ -362,6 +362,28 @@ void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
 }
 
+void drawParabola() {
+	Point *p1 = root;
+	Point *p2 = root->next;
+	Point *focus = root->next->next;
+
+	for (int y = 0; y < 600; y++)
+	{
+		for (int x = 0; x < 600; x++)
+		{
+			if (distanceFromPoint(focus->x, focus->y, convertPixelX(x), convertPixelY(y)) >
+				distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x), convertPixelY(y))) {
+				image[y*screenWidth + x] = Color(0.25f, 0.88f, 0.815f);
+			}
+			else {
+				image[y*screenWidth + x] = Color(1, 1, 0);
+			}
+		}
+	}
+
+	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
+}
+
 // Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
 void onDisplay() {
 	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
@@ -369,25 +391,7 @@ void onDisplay() {
 
 	//Parabola rajzolasa
 	if (pointCount >= 3) {
-		Point *p1 = root;
-		Point *p2 = root->next;
-		Point *focus = root->next->next;
-
-		for (int y = 0; y < 600; y++)
-		{
-			for (int x = 0; x < 600; x++)
-			{
-				if (distanceFromPoint(focus->x, focus->y, convertPixelX(x), convertPixelY(y)) >
-					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x), convertPixelY(y))) {
-					image[y*screenWidth + x] = Color(0.25f, 0.88f, 0.815f);
-				}
-				else {
-					image[y*screenWidth + x] = Color(1, 1, 0);
-				}
-			}
-		}
-
-		glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
+		drawParabola();
 	}
 
 	//Catmull-rom spline rajzolasa
