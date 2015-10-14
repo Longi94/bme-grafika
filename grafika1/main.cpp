@@ -230,7 +230,8 @@ float distanceFromPoint(float x1, float y1, float x2, float y2) {
 
 //Kontrol pont sebessegenek kiszamitasa
 Point getVelocity(Point* p) {
-	if (p == root) return Point(0, 0);
+	if (p == root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
+		((*p - *(p->previous)) / p->t)) / 2;
 
 	return (((*(p->next) - *p)/(p->next->t - p->t)) + 
 		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
