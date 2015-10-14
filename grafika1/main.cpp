@@ -372,7 +372,7 @@ void onDisplay() {
 			{
 				if (distanceFromPoint(focus->x, focus->y, convertPixelX(x), convertPixelY(y)) >
 					distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x), convertPixelY(y))) {
-					image[y*screenWidth + x] = Color(0, 0.5f, 0.5f);
+					image[y*screenWidth + x] = Color(0.25f, 0.88f, 0.815f);
 				}
 				else {
 					image[y*screenWidth + x] = Color(1, 1, 0);
