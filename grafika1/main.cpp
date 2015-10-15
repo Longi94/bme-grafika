@@ -283,6 +283,11 @@ Vector deriveSpline(Vector* p, float t) {
 Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& curvePoint) {
 	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
 	i = i / i.Length();
+
+	Vector focusProjection = directrix1 + (i * ((focus - directrix1) * i));
+	i = i * ((curvePoint - focusProjection) * i);
+	i = i / i.Length();
+
 	Vector n = Vector(i.y, -i.x);
 
 	float t = (curvePoint - focus) * i;
