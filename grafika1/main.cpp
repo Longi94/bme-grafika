@@ -88,39 +88,45 @@ struct Color {
 //--------------------------------------------------------
 // 2D-s pontok, ketiranyba lancolt listakent hasznalhato.
 //--------------------------------------------------------
-struct Point {
+struct Vector {
 	float x, y;
 	long t;
-	Point* next;
-	Point* previous;
+	Vector* next;
+	Vector* previous;
 
-	Point() {
+	Vector() {
 		x = y = 0;
 		t = 0;
 		next = previous = nullptr;
 	}
 
-	Point(float x0, float y0) {
+	Vector(float x0, float y0) {
 		x = x0; y = y0; t = 0;
 		next = previous = nullptr;
 	}
 
-	Point(float x0, float y0, float t0) {
+	Vector(float x0, float y0, float t0) {
 		x = x0; y = y0; t = t0;
 		next = previous = nullptr;
 	}
 
-	Point operator*(float a) {
-		return Point(x * a, y * a);
+	Vector operator*(float a) {
+		return Vector(x * a, y * a);
 	}
-	Point operator+(const Point& p) {
-		return Point(x + p.x, y + p.y);
+	Vector operator+(const Vector& p) {
+		return Vector(x + p.x, y + p.y);
 	}
-	Point operator-(const Point& p) {
-		return Point(x - p.x, y - p.y);
+	Vector operator-(const Vector& p) {
+		return Vector(x - p.x, y - p.y);
 	}
-	Point operator/(float a) {
-		return Point(x / a, y / a);
+	Vector operator/(float a) {
+		return Vector(x / a, y / a);
+	}
+	float operator*(const Vector& p) { 	// dot product
+		return (x * p.x + y * p.y);
+	}
+	float Length() {
+		return sqrt(x * x + y * y);
 	}
 };
 
@@ -145,15 +151,15 @@ int offsetX = 250;
 int offsetY = 250;
 
 //Lancolt lista elemek
-Point* root;
-Point* last;
+Vector* root;
+Vector* last;
 int pointCount = 0;
 
 //A parabola fokusz pontja
-Point* focus;
+Vector* focus;
 
 //A parabola es a spline elso metszespontja
-Point* intersection;
+Vector* intersection;
 
 // egy alkalmazas ablaknyi kep
 Color image[screenWidth*screenHeight];
@@ -229,7 +235,7 @@ float distanceFromPoint(float x1, float y1, float x2, float y2) {
 }
 
 //Kontrol pont sebessegenek kiszamitasa
-Point getVelocity(Point* p) {
+Vector getVelocity(Vector* p) {
 	if (p == root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
 		((*p - *(p->previous)) / p->t)) / 2;
 
@@ -238,7 +244,7 @@ Point getVelocity(Point* p) {
 }
 
 //a3-as egyutthato
-Point a3(Point* p) {
+Vector a3(Vector* p) {
 	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
 		(((*p - *(p->next)) * 2) / powf(deltaT, 3)) +
@@ -246,7 +252,7 @@ Point a3(Point* p) {
 }
 
 //a2-es egyutthato
-Point a2(Point* p) {
+Vector a2(Vector* p) {
 	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
 		(((*(p->next) - *p) * 3) / powf(deltaT, 2)) -
@@ -254,17 +260,17 @@ Point a2(Point* p) {
 }
 
 //a1-es egyutthato
-Point a1(Point* p) {
+Vector a1(Vector* p) {
 	return getVelocity(p);
 }
 
 //a0-as egyutthato
-Point a0(Point* p) {
+Vector a0(Vector* p) {
 	return *p;
 }
 
 //Ket pont kozottti Hermite interpolacio pontjait hatarozza meg.
-Point getHermiteCurve(Point* p, float t) {
+Vector getHermiteCurve(Vector* p, float t) {
 	float deltaT = t - p->t;
 	return
 		a3(p) * powf(deltaT, 3) +
@@ -273,7 +279,7 @@ Point getHermiteCurve(Point* p, float t) {
 		a0(p);
 }
 
-Point getSplineTangent(Point* p, float t) {
+Vector getSplineTangent(Vector* p, float t) {
 	float deltaT = t - p->t;
 	return
 		a3(p) * 3 * powf(deltaT, 2) +
@@ -286,7 +292,7 @@ void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
 
-	Point *current = root;
+	Vector *current = root;
 	for (int i = 0; i < (pointCount == 2 ? 1 : pointCount); i++)
 	{
 
@@ -295,7 +301,7 @@ void drawCatmullRom() {
 
 		for (float t = current->t; t < t2; t += step)
 		{
-			Point curve = getHermiteCurve(current, t);
+			Vector curve = getHermiteCurve(current, t);
 
 			float wx = (fieldWidth / 2 - curve.x) / -(fieldWidth / 2);
 			float wy = (fieldHeight / 2 - curve.y) / (fieldHeight / 2);
@@ -310,12 +316,12 @@ void drawCatmullRom() {
 
 //Megkeresi a parabola es a CM spline elso metszes pontjat (masodik es harmadik pont kozott)
 void findFirstIntersection() {
-	Point* cm1 = root->next;
-	Point* cm2 = cm1->next;
+	Vector* cm1 = root->next;
+	Vector* cm2 = cm1->next;
 
-	Point* l1 = root;
-	Point* l2 = root->next;
-	Point* focus = root->next->next;
+	Vector* l1 = root;
+	Vector* l2 = root->next;
+	Vector* focus = root->next->next;
 
 	float step = (cm2->t - cm1->t) / 1000.0f;
 
@@ -325,14 +331,14 @@ void findFirstIntersection() {
 
 	while (t < cm2->t && !found) {
 
-		Point curve = getHermiteCurve(cm1, t);
+		Vector curve = getHermiteCurve(cm1, t);
 
 		if (distanceFromPoint(focus->x, focus->y, curve.x, curve.y) <
 			distanceFromLine(l1->x, l1->y, l2->x, l2->y, curve.x, curve.y)) {
 
 			found = true;
 
-			Point tangent = getSplineTangent(cm1, t);
+			Vector tangent = getSplineTangent(cm1, t);
 
 			float m = tangent.y / tangent.x;
 			float b = curve.y + tangent.y - m*(curve.x + tangent.x);
@@ -362,17 +368,25 @@ void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
 }
 
+bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& p) {
+	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
+	i = i / i.Length();
+	Vector n = Vector(i.y, -i.x);
+
+	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) > 0;
+}
+
 void drawParabola() {
-	Point *p1 = root;
-	Point *p2 = root->next;
-	Point *focus = root->next->next;
+	Vector *directrix1 = root;
+	Vector *directrix2 = root->next;
+	Vector *focus = root->next->next;
 
 	for (int y = 0; y < 600; y++)
 	{
 		for (int x = 0; x < 600; x++)
 		{
-			if (distanceFromPoint(focus->x, focus->y, convertPixelX(x), convertPixelY(y)) >
-				distanceFromLine(p1->x, p1->y, p2->x, p2->y, convertPixelX(x), convertPixelY(y))) {
+			Vector p = Vector(convertPixelX(x), convertPixelY(y));
+			if (isInParabola(*directrix1, *directrix2, *focus, p)) {
 				image[y*screenWidth + x] = Color(0, 1, 1);
 			}
 			else {
@@ -400,7 +414,7 @@ void onDisplay() {
 	}
 
 	//Pontok rajzolasa
-	Point *current = root;
+	Vector *current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
 		drawCircle(current->x, current->y, circleRadius, circlePoints);
@@ -457,12 +471,12 @@ void onMouse(int button, int state, int x, int y) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 
 		if (pointCount == 0) {
-			root = new Point(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
+			root = new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
 			last = root;
 		}
 		else {
-			Point* previous = last;
-			last->next = new Point(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
+			Vector* previous = last;
+			last->next = new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
 			last = last->next;
 			last->previous = previous;
 
