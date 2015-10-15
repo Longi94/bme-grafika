@@ -125,6 +125,9 @@ struct Vector {
 	Vector operator/(float a) {
 		return Vector(x / a, y / a);
 	}
+	float operator%(const Vector& v) { 	// cross product
+		return x * v.y - y * v.x;
+	}
 	float operator*(const Vector& p) { 	// dot product
 		return (x * p.x + y * p.y);
 	}
@@ -288,9 +291,11 @@ Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vec
 	i = i * ((curvePoint - focusProjection) * i);
 	i = i / i.Length();
 
-	Vector n = Vector(i.y, -i.x);
-
 	float t = (curvePoint - focus) * i;
+	
+	t = (focus - directrix1) % i < 0 ? -t : t;
+
+	Vector n = Vector(i.y, -i.x);
 
 	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
