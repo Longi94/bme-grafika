@@ -116,6 +116,9 @@ struct Vector {
 	Vector operator+(const Vector& p) {
 		return Vector(x + p.x, y + p.y);
 	}
+	Vector operator+(float a) {
+		return Vector(x + a, y + a);
+	}
 	Vector operator-(const Vector& p) {
 		return Vector(x - p.x, y - p.y);
 	}
@@ -224,16 +227,6 @@ int convertPixelY(int y) {
 	}
 }
 
-//Pont vonaltol valo tavolsagat szamitja ki
-float distanceFromLine(float x1, float y1, float x2, float y2, float px, float py) {
-	return fabsf((y2 - y1)*px - (x2 - x1)*py + x2*y1 - y2*x1) / sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
-}
-
-//Pont ponttol valo tavolsagat szamitja ki
-float distanceFromPoint(float x1, float y1, float x2, float y2) {
-	return sqrtf(powf(y2 - y1, 2) + powf(x2 - x1, 2));
-}
-
 //Kontrol pont sebessegenek kiszamitasa
 Vector getVelocity(Vector* p) {
 	if (p == root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
@@ -279,12 +272,23 @@ Vector getHermiteCurve(Vector* p, float t) {
 		a0(p);
 }
 
-Vector getSplineTangent(Vector* p, float t) {
+Vector deriveSpline(Vector* p, float t) {
 	float deltaT = t - p->t;
 	return
 		a3(p) * 3 * powf(deltaT, 2) +
 		a2(p) * 2 * deltaT +
 		a1(p);
+}
+
+Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& curvePoint) {
+	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
+	i = i / i.Length();
+	Vector n = Vector(i.y, -i.x);
+
+	Vector p = directrix1 + ((focus - directrix1) * i);
+	float t = /*(p - curvePoint) * i*/0;
+
+	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
 
 //Felrajzolja a Catmull-Rom spline a pontokhoz.
@@ -314,58 +318,51 @@ void drawCatmullRom() {
 	glEnd();
 }
 
-//Megkeresi a parabola es a CM spline elso metszes pontjat (masodik es harmadik pont kozott)
-void findFirstIntersection() {
-	Vector* cm1 = root->next;
-	Vector* cm2 = cm1->next;
+void drawSplineTangent(Vector* controlPoint, float t, Vector& curvePoint) {
 
-	Vector* l1 = root;
-	Vector* l2 = root->next;
-	Vector* focus = root->next->next;
+	Vector steep = deriveSpline(controlPoint, t);
 
-	float step = (cm2->t - cm1->t) / 1000.0f;
+	float m = steep.y / steep.x;
+	float b = curvePoint.y + steep.y - m*(curvePoint.x + steep.x);
 
-	float t = cm1->t;
+	float splineTangentX1 = 0;
+	float splineTangentY1 = b;
+	float splineTangentX2 = 1000.0f;
+	float splineTangentY2 = m*splineTangentX2 + b;
 
-	bool found = false;
+	float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
+	float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
+	float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
+	float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
 
-	while (t < cm2->t && !found) {
-
-		Vector curve = getHermiteCurve(cm1, t);
-
-		if (distanceFromPoint(focus->x, focus->y, curve.x, curve.y) <
-			distanceFromLine(l1->x, l1->y, l2->x, l2->y, curve.x, curve.y)) {
-
-			found = true;
-
-			Vector tangent = getSplineTangent(cm1, t);
-
-			float m = tangent.y / tangent.x;
-			float b = curve.y + tangent.y - m*(curve.x + tangent.x);
-
-			float splineTangentX1 = 0;
-			float splineTangentY1 = b;
-			float splineTangentX2 = 1000.0f;
-			float splineTangentY2 = m*splineTangentX2 + b;
-
-			float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
-			float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
-			float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
-			float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
-
-			glColor3f(0, 1, 0);
-			glBegin(GL_LINES);
-			glVertex2f(wx1, wy1);
-			glVertex2f(wx2, wy2);
-			glEnd();
-		}
-		t += step;
-	}
+	glColor3f(0, 1, 0);
+	glBegin(GL_LINES);
+	glVertex2f(wx1, wy1);
+	glVertex2f(wx2, wy2);
+	glEnd();
 }
 
-// Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
-void onInitialization() {
-	glViewport(0, 0, screenWidth, screenHeight);
+void drawParabolaTangent(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& curvePoint) {
+	Vector steep = deriveParabola(directrix1, directrix2, focus, curvePoint);
+
+	float m = steep.y / steep.x;
+	float b = curvePoint.y + steep.y - m*(curvePoint.x + steep.x);
+
+	float splineTangentX1 = 0;
+	float splineTangentY1 = b;
+	float splineTangentX2 = 1000.0f;
+	float splineTangentY2 = m*splineTangentX2 + b;
+
+	float wx1 = (fieldWidth / 2 - splineTangentX1) / -(fieldWidth / 2);
+	float wy1 = (fieldHeight / 2 - splineTangentY1) / (fieldHeight / 2);
+	float wx2 = (fieldWidth / 2 - splineTangentX2) / -(fieldWidth / 2);
+	float wy2 = (fieldHeight / 2 - splineTangentY2) / (fieldHeight / 2);
+
+	glColor3f(0, 1, 0);
+	glBegin(GL_LINES);
+	glVertex2f(wx1, wy1);
+	glVertex2f(wx2, wy2);
+	glEnd();
 }
 
 bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& p) {
@@ -373,29 +370,64 @@ bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector&
 	i = i / i.Length();
 	Vector n = Vector(i.y, -i.x);
 
-	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) > 0;
+	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) < 0;
+}
+
+//Megkeresi a parabola es a CM spline elso metszes pontjat (masodik es harmadik pont kozott)
+void findFirstIntersection() {
+	Vector cm1 = *(root->next);
+	Vector cm2 = *(cm1.next);
+
+	Vector directrix1 = *root;
+	Vector directrix2 = *(root->next);
+	Vector focus = *(root->next->next);
+
+	float step = (cm2.t - cm1.t) / 1000.0f;
+
+	float t = cm1.t;
+
+	bool found = false;
+
+	while (t < cm2.t && !found) {
+
+		Vector curvePoint = getHermiteCurve(&cm1, t);
+
+		if (isInParabola(directrix1, directrix2, focus, curvePoint)) {
+
+			found = true;
+
+			drawSplineTangent(&cm1, t, curvePoint);
+			drawParabolaTangent(directrix1, directrix2, focus, curvePoint);
+		}
+		t += step;
+	}
 }
 
 void drawParabola() {
-	Vector *directrix1 = root;
-	Vector *directrix2 = root->next;
-	Vector *focus = root->next->next;
+	Vector directrix1 = *root;
+	Vector directrix2 = *(root->next);
+	Vector focus = *(root->next->next);
 
 	for (int y = 0; y < 600; y++)
 	{
 		for (int x = 0; x < 600; x++)
 		{
 			Vector p = Vector(convertPixelX(x), convertPixelY(y));
-			if (isInParabola(*directrix1, *directrix2, *focus, p)) {
-				image[y*screenWidth + x] = Color(0, 1, 1);
+			if (isInParabola(directrix1, directrix2, focus, p)) {
+				image[y*screenWidth + x] = Color(1, 1, 0);
 			}
 			else {
-				image[y*screenWidth + x] = Color(1, 1, 0);
+				image[y*screenWidth + x] = Color(0, 1, 1);
 			}
 		}
 	}
 
 	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
+}
+
+// Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
+void onInitialization() {
+	glViewport(0, 0, screenWidth, screenHeight);
 }
 
 // Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
