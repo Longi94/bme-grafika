@@ -287,15 +287,11 @@ Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vec
 	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
 	i = i / i.Length();
 
-	Vector focusProjection = directrix1 + (i * ((focus - directrix1) * i));
-	i = i * ((curvePoint - focusProjection) * i);
-	i = i / i.Length();
+	Vector n = Vector(i.y, -i.x);
 
 	float t = (curvePoint - focus) * i;
 	
 	t = (focus - directrix1) % i < 0 ? -t : t;
-
-	Vector n = Vector(i.y, -i.x);
 
 	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
