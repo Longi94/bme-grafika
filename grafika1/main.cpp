@@ -285,8 +285,7 @@ Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vec
 	i = i / i.Length();
 	Vector n = Vector(i.y, -i.x);
 
-	Vector p = directrix1 + ((focus - directrix1) * i);
-	float t = /*(p - curvePoint) * i*/0;
+	float t = (curvePoint - focus) * i;
 
 	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
@@ -414,10 +413,10 @@ void drawParabola() {
 		{
 			Vector p = Vector(convertPixelX(x), convertPixelY(y));
 			if (isInParabola(directrix1, directrix2, focus, p)) {
-				image[y*screenWidth + x] = Color(1, 1, 0);
+				image[y*screenWidth + x] = Color(1, 0, 0);
 			}
 			else {
-				image[y*screenWidth + x] = Color(0, 1, 1);
+				image[y*screenWidth + x] = Color(0, 0, 1);
 			}
 		}
 	}
