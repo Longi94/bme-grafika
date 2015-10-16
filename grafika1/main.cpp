@@ -91,17 +91,17 @@ struct Vector {
 	Vector() {
 		x = y = 0;
 		t = 0;
-		next = previous = nullptr;
+		next = previous = 0;
 	}
 
 	Vector(float x0, float y0) {
 		x = x0; y = y0; t = 0;
-		next = previous = nullptr;
+		next = previous = 0;
 	}
 
 	Vector(float x0, float y0, float t0) {
 		x = x0; y = y0; t = t0;
-		next = previous = nullptr;
+		next = previous = 0;
 	}
 
 	Vector operator*(float a) {
@@ -130,6 +130,44 @@ struct Vector {
 	}
 };
 
+class VectorLinkedList {
+public:
+	Vector* root;
+	Vector* last;
+	int count = 0;
+
+	VectorLinkedList() {
+		root = last = 0;
+	}
+
+	void addVector(Vector* vector) {
+		if (count == 0) {
+			root = vector;
+			last = root;
+		}
+		else {
+			Vector* previous = last;
+			last->next = vector;
+			last = last->next;
+			last->previous = previous;
+
+			last->next = root;
+			root->previous = last;
+		}
+		count++;
+	}
+
+	~VectorLinkedList() {
+		Vector* current = root;
+		for (int i = 0; i < count; i++)
+		{
+			Vector* next = current->next;
+			delete current;
+			current = next;
+		}
+	}
+};
+
 const int screenWidth = 600;
 const int screenHeight = 600;
 
@@ -140,6 +178,8 @@ const float fieldHeight = 1000;
 
 const int circlePoints = 10;
 const float circleRadius = 5.0f;
+
+VectorLinkedList points;
 
 Vector* directrix1;
 Vector* directrix2;
@@ -155,10 +195,6 @@ float offsetY = 250;
 
 Vector cameraSpeed;
 long lastTimeStamp = -1;
-
-Vector* root;
-Vector* last;
-int pointCount = 0;
 
 Color image[screenWidth*screenHeight];
 
@@ -220,7 +256,7 @@ float pixelToFieldY(int y) {
 }
 
 Vector getVelocity(Vector* p) {
-	if (p == root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
+	if (p == points.root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
 		((*p - *(p->previous)) / p->t)) / 2;
 
 	return (((*(p->next) - *p)/(p->next->t - p->t)) + 
@@ -228,14 +264,14 @@ Vector getVelocity(Vector* p) {
 }
 
 Vector a3(Vector* p) {
-	float deltaT = p == last ? p->next->t : p->next->t - p->t;
+	float deltaT = p == points.last ? p->next->t : p->next->t - p->t;
 	return
 		(((*p - *(p->next)) * 2) / powf(deltaT, 3)) +
 		((getVelocity(p->next) + getVelocity(p)) / powf(deltaT, 2));
 }
 
 Vector a2(Vector* p) {
-	float deltaT = p == last ? p->next->t : p->next->t - p->t;
+	float deltaT = p == points.last ? p->next->t : p->next->t - p->t;
 	return
 		(((*(p->next) - *p) * 3) / powf(deltaT, 2)) -
 		((getVelocity(p->next) + getVelocity(p) * 2) / deltaT);
@@ -291,16 +327,16 @@ void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
 
-	Vector* current = root;
-	for (int i = 0; i < (pointCount == 2 ? 1 : pointCount); i++)
+	Vector* current = points.root;
+	for (int i = 0; i < (points.count == 2 ? 1 : points.count); i++)
 	{
 
-		bool findIntersection = pointCount > 2 && i == 1;
+		bool findIntersection = points.count > 2 && i == 1;
 		if (findIntersection) {
 			intersectionFound = false;
 		}
 
-		float t2 = current == last ? current->t + current->next->t : current->next->t;
+		float t2 = current == points.last ? current->t + current->next->t : current->next->t;
 		float step = (t2 - current->t) / 1000.0f;
 
 		for (float t = current->t; t < t2; t += step)
@@ -395,29 +431,30 @@ void drawParabola() {
 
 void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
+	points = VectorLinkedList();
 }
 
 void onDisplay() {
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (pointCount >= 3) {
+	if (points.count >= 3) {
 		drawParabola();
 	}
 
-	if (pointCount >= 2) {
+	if (points.count >= 2) {
 		drawCatmullRom();
 	}
 
-	Vector* current = root;
-	for (int i = 0; i < pointCount; i++)
+	Vector* current = points.root;
+	for (int i = 0; i < points.count; i++)
 	{
 		drawCircle(current->x, current->y, circleRadius, circlePoints);
 		current = current->next;
 	}
 
-	if (pointCount >= 3 && intersectionFound) {
-		drawSplineTangent(root->next, intersectionT, intersection);
+	if (points.count >= 3 && intersectionFound) {
+		drawSplineTangent(points.root->next, intersectionT, intersection);
 		drawParabolaTangent(*directrix1, *directrix2, *focus, intersection);
 	}
 
@@ -446,27 +483,16 @@ void onMouse(int button, int state, int x, int y) {
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 
-		if (pointCount == 0) {
-			root = new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
-			last = root;
-			directrix1 = root;
-		}
-		else {
-			Vector* previous = last;
-			last->next = new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
-			last = last->next;
-			last->previous = previous;
+		points.addVector(new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME)));
 
-			last->next = root;
-			root->previous = last;
+		if (points.count == 1) {
+			directrix1 = points.last;
 		}
-		pointCount++;
-
-		if (pointCount == 2) {
-			directrix2 = last;
+		if (points.count == 2) {
+			directrix2 = points.last;
 		}
-		if (pointCount == 3) {
-			focus = last;
+		if (points.count == 3) {
+			focus = points.last;
 		}
 
 		glutPostRedisplay();
