@@ -260,6 +260,9 @@ Vector getVelocity(Vector* p) {
 	if (p == points.root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
 		((*p - *(p->previous)) / p->t)) / 2;
 
+	if (p == points.last) return (((*(p->next) - *p) / p->next->t) +
+		((*p - *(p->previous)) / (p->t - p->previous->t))) / 2;
+
 	return (((*(p->next) - *p)/(p->next->t - p->t)) + 
 		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
 }
