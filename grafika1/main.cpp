@@ -141,6 +141,10 @@ const float fieldHeight = 1000;
 const int circlePoints = 10;
 const float circleRadius = 5.0f;
 
+Vector* directrix1;
+Vector* directrix2;
+Vector* focus;
+
 int zoom = 1;
 float offsetX = 250;
 float offsetY = 250;
@@ -275,7 +279,7 @@ void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
 
-	Vector *current = root;
+	Vector* current = root;
 	for (int i = 0; i < (pointCount == 2 ? 1 : pointCount); i++)
 	{
 
@@ -356,10 +360,6 @@ void findFirstIntersection() {
 	Vector cm1 = *(root->next);
 	Vector cm2 = *(cm1.next);
 
-	Vector directrix1 = *root;
-	Vector directrix2 = *(root->next);
-	Vector focus = *(root->next->next);
-
 	float step = (cm2.t - cm1.t) / 1000.0f;
 
 	float t = cm1.t;
@@ -370,28 +370,25 @@ void findFirstIntersection() {
 
 		Vector curvePoint = getHermiteCurvePoint(&cm1, t);
 
-		if (isInParabola(directrix1, directrix2, focus, curvePoint)) {
+		if (isInParabola(*directrix1, *directrix2, *focus, curvePoint)) {
 
 			found = true;
 
 			drawSplineTangent(&cm1, t, curvePoint);
-			drawParabolaTangent(directrix1, directrix2, focus, curvePoint);
+			drawParabolaTangent(*directrix1, *directrix2, *focus, curvePoint);
 		}
 		t += step;
 	}
 }
 
 void drawParabola() {
-	Vector directrix1 = *root;
-	Vector directrix2 = *(root->next);
-	Vector focus = *(root->next->next);
 
 	for (int y = 0; y < 600; y++)
 	{
 		for (int x = 0; x < 600; x++)
 		{
 			Vector p = Vector(pixelToFieldX(x), pixelToFieldY(y));
-			if (isInParabola(directrix1, directrix2, focus, p)) {
+			if (isInParabola(*directrix1, *directrix2, *focus, p)) {
 				image[y*screenWidth + x] = Color(1, 1, 0);
 			}
 			else {
@@ -419,7 +416,7 @@ void onDisplay() {
 		drawCatmullRom();
 	}
 
-	Vector *current = root;
+	Vector* current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
 		drawCircle(current->x, current->y, circleRadius, circlePoints);
@@ -458,6 +455,7 @@ void onMouse(int button, int state, int x, int y) {
 		if (pointCount == 0) {
 			root = new Vector(x * ratio, y * ratio, glutGet(GLUT_ELAPSED_TIME));
 			last = root;
+			directrix1 = root;
 		}
 		else {
 			Vector* previous = last;
@@ -469,6 +467,13 @@ void onMouse(int button, int state, int x, int y) {
 			root->previous = last;
 		}
 		pointCount++;
+
+		if (pointCount == 2) {
+			directrix2 = last;
+		}
+		if (pointCount == 3) {
+			focus = last;
+		}
 
 		glutPostRedisplay();
 	}
