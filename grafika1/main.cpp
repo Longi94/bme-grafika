@@ -134,6 +134,16 @@ struct Vector {
 	float Length() {
 		return sqrt(x * x + y * y);
 	}
+
+	~Vector() {
+		if (previous != nullptr) {
+			previous->next = nullptr;
+		}
+		if (next != nullptr) {
+			next->previous = nullptr;
+			delete next;
+		}
+	}
 };
 
 // alkalmazas ablak felbontasa
@@ -419,10 +429,10 @@ void drawParabola() {
 		{
 			Vector p = Vector(pixelToFieldX(x), pixelToFieldY(y));
 			if (isInParabola(directrix1, directrix2, focus, p)) {
-				image[y*screenWidth + x] = Color(1, 0, 0);
+				image[y*screenWidth + x] = Color(1, 1, 0);
 			}
 			else {
-				image[y*screenWidth + x] = Color(0, 0, 1);
+				image[y*screenWidth + x] = Color(0, 1, 1);
 			}
 		}
 	}
