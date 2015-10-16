@@ -533,6 +533,14 @@ void onIdle() {
 
 			glTranslatef((-cameraSpeed.x / 1000.0f / 500.f * dt), (-cameraSpeed.y / 1000.0f / 500.f * dt), 0);
 
+			if ((offsetX > 500 && cameraSpeed.x > 0) || (offsetX < 0 && cameraSpeed.x < 0)) {
+				cameraSpeed.x = -cameraSpeed.x;
+			}
+
+			if ((offsetY > 500 && cameraSpeed.y > 0) || (offsetY < 0 && cameraSpeed.y < 0)) {
+				cameraSpeed.y = -cameraSpeed.y;
+			}
+
 			glutPostRedisplay();
 		}
 		lastTimeStamp = time;
