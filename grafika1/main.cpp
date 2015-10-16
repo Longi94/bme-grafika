@@ -466,9 +466,7 @@ void onKeyboard(unsigned char key, int x, int y) {
 	if (key == ' '  && zoom != 2) {
 		zoom = 2;
 		gluOrtho2D(-0.5, 0.5, -0.5, 0.5);
-		float angle = (float)(glutGet(GLUT_ELAPSED_TIME) % 360) * (M_PI / 180.0f);
-		float v = 3;
-		cameraSpeed = Vector(v * cosf(angle), v * sinf(angle));
+		cameraSpeed = Vector(2, 3);
 	}
 	glutPostRedisplay();
 }
