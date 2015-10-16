@@ -145,6 +145,10 @@ Vector* directrix1;
 Vector* directrix2;
 Vector* focus;
 
+bool intersectionFound = false;
+Vector intersection = Vector();
+long intersectionT;
+
 int zoom = 1;
 float offsetX = 250;
 float offsetY = 250;
@@ -275,6 +279,14 @@ Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vec
 	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
 
+bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& p) {
+	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
+	i = i / i.Length();
+	Vector n = Vector(i.y, -i.x);
+
+	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) < 0;
+}
+
 void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
@@ -283,15 +295,29 @@ void drawCatmullRom() {
 	for (int i = 0; i < (pointCount == 2 ? 1 : pointCount); i++)
 	{
 
+		bool findIntersection = pointCount > 2 && i == 1;
+		if (findIntersection) {
+			intersectionFound = false;
+		}
+
 		float t2 = current == last ? current->t + current->next->t : current->next->t;
 		float step = (t2 - current->t) / 1000.0f;
 
 		for (float t = current->t; t < t2; t += step)
 		{
-			Vector curve = getHermiteCurvePoint(current, t);
+			Vector curvePoint = getHermiteCurvePoint(current, t);
 
-			float wx = (fieldWidth / 2 - curve.x) / -(fieldWidth / 2);
-			float wy = (fieldHeight / 2 - curve.y) / (fieldHeight / 2);
+			if (findIntersection && !intersectionFound) {
+				if (isInParabola(*directrix1, *directrix2, *focus, curvePoint)) {
+					intersectionFound = true;
+					intersection.x = curvePoint.x;
+					intersection.y = curvePoint.y;
+					intersectionT = t;
+				}
+			}
+
+			float wx = (fieldWidth / 2 - curvePoint.x) / -(fieldWidth / 2);
+			float wy = (fieldHeight / 2 - curvePoint.y) / (fieldHeight / 2);
 
 			glVertex2f(wx, wy);
 		}
@@ -348,39 +374,6 @@ void drawParabolaTangent(Vector& directrix1, Vector& directrix2, Vector& focus, 
 	glEnd();
 }
 
-bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector& p) {
-	Vector i = Vector(directrix2.x - directrix1.x, directrix2.y - directrix1.y);
-	i = i / i.Length();
-	Vector n = Vector(i.y, -i.x);
-
-	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) < 0;
-}
-
-void findFirstIntersection() {
-	Vector cm1 = *(root->next);
-	Vector cm2 = *(cm1.next);
-
-	float step = (cm2.t - cm1.t) / 1000.0f;
-
-	float t = cm1.t;
-
-	bool found = false;
-
-	while (t < cm2.t && !found) {
-
-		Vector curvePoint = getHermiteCurvePoint(&cm1, t);
-
-		if (isInParabola(*directrix1, *directrix2, *focus, curvePoint)) {
-
-			found = true;
-
-			drawSplineTangent(&cm1, t, curvePoint);
-			drawParabolaTangent(*directrix1, *directrix2, *focus, curvePoint);
-		}
-		t += step;
-	}
-}
-
 void drawParabola() {
 
 	for (int y = 0; y < 600; y++)
@@ -423,8 +416,9 @@ void onDisplay() {
 		current = current->next;
 	}
 
-	if (pointCount >= 3) {
-		findFirstIntersection();
+	if (pointCount >= 3 && intersectionFound) {
+		drawSplineTangent(root->next, intersectionT, intersection);
+		drawParabolaTangent(*directrix1, *directrix2, *focus, intersection);
 	}
 
 	glutSwapBuffers();
