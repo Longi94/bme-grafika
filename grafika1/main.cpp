@@ -62,9 +62,6 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
-//--------------------------------------------------------
-// Spektrum illetve szin
-//--------------------------------------------------------
 struct Color {
 	float r, g, b;
 
@@ -85,9 +82,6 @@ struct Color {
 	}
 };
 
-//--------------------------------------------------------
-// 2D-s pontok, ketiranyba lancolt listakent hasznalhato.
-//--------------------------------------------------------
 struct Vector {
 	float x, y;
 	long t;
@@ -146,22 +140,17 @@ struct Vector {
 	}
 };
 
-// alkalmazas ablak felbontasa
 const int screenWidth = 600;
 const int screenHeight = 600;
 
-//Mezo es ablak meret arany
 const float ratio = 1000.0f / 600.0f;
 
-//A mezo merete meterben
 const float fieldWidth = 1000;
 const float fieldHeight = 1000;
 
-//Pontokhoz tartozo konstansok
 const int circlePoints = 10;
 const float circleRadius = 5.0f;
 
-//Nagyitas es eltolas merteke. A hatter rajzolasahoz kell
 int zoom = 1;
 float offsetX = 250;
 float offsetY = 250;
@@ -169,18 +158,12 @@ float offsetY = 250;
 Vector cameraSpeed;
 long lastTimeStamp = -1;
 
-//Lancolt lista elemek
 Vector* root;
 Vector* last;
 int pointCount = 0;
 
-//A parabola fokusz pontja
-Vector* focus;
-
-// egy alkalmazas ablaknyi kep
 Color image[screenWidth*screenHeight];
 
-//Feher korvonalu piros pottyot rajzol a megadott parameterek alapjan
 void drawCircle(float cx, float cy, float r, int segments)
 {
 	float wx = (fieldWidth / 2 - cx) / -(fieldWidth / 2);
@@ -191,12 +174,12 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glBegin(GL_POLYGON);
 	for (int i = 0; i < segments; i++)
 	{
-		float theta = 2.0f * M_PI * float(i) / float(segments);//get the current angle 
+		float theta = 2.0f * M_PI * float(i) / float(segments);
 
-		float x = wr * cosf(theta);//calculate the x component 
-		float y = wr * sinf(theta);//calculate the y component 
+		float x = wr * cosf(theta); 
+		float y = wr * sinf(theta);
 
-		glVertex2f(x + wx, y + wy);//output vertex 
+		glVertex2f(x + wx, y + wy); 
 	}
 	glEnd();
 
@@ -204,17 +187,16 @@ void drawCircle(float cx, float cy, float r, int segments)
 	glBegin(GL_LINE_LOOP);
 	for (int i = 0; i < segments; i++)
 	{
-		float theta = 2.0f * M_PI * float(i) / float(segments);//get the current angle 
+		float theta = 2.0f * M_PI * float(i) / float(segments); 
 
-		float x = wr * cosf(theta);//calculate the x component 
-		float y = wr * sinf(theta);//calculate the y component 
+		float x = wr * cosf(theta); 
+		float y = wr * sinf(theta);
 
-		glVertex2f(x + wx, y + wy);//output vertex 
+		glVertex2f(x + wx, y + wy);
 	}
 	glEnd();
 }
 
-//X koordinatat at konvertal mezo koordinatava
 float pixelToFieldX(int x) {
 	switch (zoom)
 	{
@@ -223,11 +205,10 @@ float pixelToFieldX(int x) {
 	case 2:
 		return ((float)x * ratio) / (float)zoom + offsetX;
 	default:
-		throw "Invalid argument";
+		return 0;
 	}
 }
 
-//Y koordinatat atkonvertal mezo koordinatava
 float pixelToFieldY(int y) {
 	switch (zoom)
 	{
@@ -236,11 +217,10 @@ float pixelToFieldY(int y) {
 	case 2:
 		return fieldHeight - (((float)y * ratio) / (float)zoom + offsetY);
 	default:
-		throw "Invalid argument";
+		return 0;
 	}
 }
 
-//Kontrol pont sebessegenek kiszamitasa
 Vector getVelocity(Vector* p) {
 	if (p == root) return (((*(p->next) - *p) / (p->next->t - p->t)) +
 		((*p - *(p->previous)) / p->t)) / 2;
@@ -249,7 +229,6 @@ Vector getVelocity(Vector* p) {
 		((*p - *(p->previous))/(p->t - p->previous->t))) / 2;
 }
 
-//a3-as egyutthato
 Vector a3(Vector* p) {
 	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
@@ -257,7 +236,6 @@ Vector a3(Vector* p) {
 		((getVelocity(p->next) + getVelocity(p)) / powf(deltaT, 2));
 }
 
-//a2-es egyutthato
 Vector a2(Vector* p) {
 	float deltaT = p == last ? p->next->t : p->next->t - p->t;
 	return
@@ -265,18 +243,15 @@ Vector a2(Vector* p) {
 		((getVelocity(p->next) + getVelocity(p) * 2) / deltaT);
 }
 
-//a1-es egyutthato
 Vector a1(Vector* p) {
 	return getVelocity(p);
 }
 
-//a0-as egyutthato
 Vector a0(Vector* p) {
 	return *p;
 }
 
-//Ket pont kozottti Hermite interpolacio pontjait hatarozza meg.
-Vector getHermiteCurve(Vector* p, float t) {
+Vector getHermiteCurvePoint(Vector* p, float t) {
 	float deltaT = t - p->t;
 	return
 		a3(p) * powf(deltaT, 3) +
@@ -306,7 +281,6 @@ Vector deriveParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vec
 	return i + n * 2 * t / (2 * fabsf((n * (focus - directrix1))));
 }
 
-//Felrajzolja a Catmull-Rom spline a pontokhoz.
 void drawCatmullRom() {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
@@ -320,7 +294,7 @@ void drawCatmullRom() {
 
 		for (float t = current->t; t < t2; t += step)
 		{
-			Vector curve = getHermiteCurve(current, t);
+			Vector curve = getHermiteCurvePoint(current, t);
 
 			float wx = (fieldWidth / 2 - curve.x) / -(fieldWidth / 2);
 			float wy = (fieldHeight / 2 - curve.y) / (fieldHeight / 2);
@@ -388,7 +362,6 @@ bool isInParabola(Vector& directrix1, Vector& directrix2, Vector& focus, Vector&
 	return ((p - focus) * (p - focus) - (n * (p - directrix1)) * (n * (p - directrix1))) < 0;
 }
 
-//Megkeresi a parabola es a CM spline elso metszes pontjat (masodik es harmadik pont kozott)
 void findFirstIntersection() {
 	Vector cm1 = *(root->next);
 	Vector cm2 = *(cm1.next);
@@ -405,7 +378,7 @@ void findFirstIntersection() {
 
 	while (t < cm2.t && !found) {
 
-		Vector curvePoint = getHermiteCurve(&cm1, t);
+		Vector curvePoint = getHermiteCurvePoint(&cm1, t);
 
 		if (isInParabola(directrix1, directrix2, focus, curvePoint)) {
 
@@ -440,27 +413,22 @@ void drawParabola() {
 	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
 }
 
-// Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
 void onInitialization() {
 	glViewport(0, 0, screenWidth, screenHeight);
 }
 
-// Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
 void onDisplay() {
-	glClearColor(0, 0, 0, 1);		// torlesi szin beallitasa
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//Parabola rajzolasa
 	if (pointCount >= 3) {
 		drawParabola();
 	}
 
-	//Catmull-rom spline rajzolasa
 	if (pointCount >= 2) {
 		drawCatmullRom();
 	}
 
-	//Pontok rajzolasa
 	Vector *current = root;
 	for (int i = 0; i < pointCount; i++)
 	{
@@ -468,19 +436,16 @@ void onDisplay() {
 		current = current->next;
 	}
 
-	//Metszepont megkeresese
 	if (pointCount >= 3) {
 		findFirstIntersection();
 	}
 
-	glutSwapBuffers();// Buffercsere: rajzolas vege
+	glutSwapBuffers();
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (lenyomas)
 void onKeyboard(unsigned char key, int x, int y) {
 
 	if (key == ' '  && zoom != 2) {
-		// TODO zoom in and start moving, disable all inputs
 		zoom = 2;
 		gluOrtho2D(-0.5, 0.5, -0.5, 0.5);
 		float angle = (float)(glutGet(GLUT_ELAPSED_TIME) % 360) * (M_PI / 180.0f);
@@ -490,12 +455,10 @@ void onKeyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (felengedes)
 void onKeyboardUp(unsigned char key, int x, int y) {
 
 }
 
-// Eger esemenyeket lekezelo fuggveny
 void onMouse(int button, int state, int x, int y) {
 
 	if (zoom == 2) return;
@@ -517,23 +480,17 @@ void onMouse(int button, int state, int x, int y) {
 		}
 		pointCount++;
 
-		if (pointCount == 3) {
-			focus = last;
-		}
-
 		glutPostRedisplay();
 	}
 }
 
-// Eger mozgast lekezelo fuggveny
 void onMouseMotion(int x, int y)
 {
 
 }
 
-// `Idle' esemenykezelo, jelzi, hogy az ido telik, az Idle esemenyek frekvenciajara csak a 0 a garantalt minimalis ertek
 void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME);		// program inditasa ota eltelt ido
+	long time = glutGet(GLUT_ELAPSED_TIME);
 	if (zoom == 2) {
 		if (lastTimeStamp != -1) {
 			long dt = time - lastTimeStamp;
