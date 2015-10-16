@@ -6,7 +6,7 @@
 // Tilos:
 // - mast "beincludolni", illetve mas konyvtarat hasznalni
 // - faljmuveleteket vegezni (printf is fajlmuvelet!)
-// - new operatort hivni az onInitialization fﬂggv nyt kiv ve, a lefoglalt adat korrekt felszabadÌtÂsa n lkﬂl 
+// - new operatort hivni az onInitialization fﬂggv?nyt kiv?ve, a lefoglalt adat korrekt felszabadÌt?sa n?lkﬂl 
 // - felesleges programsorokat a beadott programban hagyni
 // - tovabbi kommenteket a beadott programba irni a forrasmegjelolest kommentjeit kiveve
 // ---------------------------------------------------------------------------------------------
