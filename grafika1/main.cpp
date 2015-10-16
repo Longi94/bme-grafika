@@ -134,10 +134,11 @@ class VectorLinkedList {
 public:
 	Vector* root;
 	Vector* last;
-	int count = 0;
+	int count;
 
 	VectorLinkedList() {
 		root = last = 0;
+		count = 0;
 	}
 
 	void addVector(Vector* vector) {
