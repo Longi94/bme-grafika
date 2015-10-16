@@ -128,16 +128,6 @@ struct Vector {
 	float Length() {
 		return sqrt(x * x + y * y);
 	}
-
-	~Vector() {
-		if (previous != nullptr) {
-			previous->next = nullptr;
-		}
-		if (next != nullptr) {
-			next->previous = nullptr;
-			delete next;
-		}
-	}
 };
 
 const int screenWidth = 600;
