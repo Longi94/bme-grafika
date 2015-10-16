@@ -144,8 +144,8 @@ const int screenHeight = 600;
 const float ratio = 1000.0f / 600.0f;
 
 //A mezo merete meterben
-const int fieldWidth = 1000;
-const int fieldHeight = 1000;
+const float fieldWidth = 1000;
+const float fieldHeight = 1000;
 
 //Pontokhoz tartozo konstansok
 const int circlePoints = 10;
@@ -153,8 +153,11 @@ const float circleRadius = 5.0f;
 
 //Nagyitas es eltolas merteke. A hatter rajzolasahoz kell
 int zoom = 1;
-int offsetX = 250;
-int offsetY = 250;
+float offsetX = 250;
+float offsetY = 250;
+
+Vector cameraSpeed;
+long lastTimeStamp = -1;
 
 //Lancolt lista elemek
 Vector* root;
@@ -163,9 +166,6 @@ int pointCount = 0;
 
 //A parabola fokusz pontja
 Vector* focus;
-
-//A parabola es a spline elso metszespontja
-Vector* intersection;
 
 // egy alkalmazas ablaknyi kep
 Color image[screenWidth*screenHeight];
@@ -205,26 +205,26 @@ void drawCircle(float cx, float cy, float r, int segments)
 }
 
 //X koordinatat at konvertal mezo koordinatava
-int convertPixelX(int x) {
+float pixelToFieldX(int x) {
 	switch (zoom)
 	{
 	case 1:
-		return x * ratio;
+		return (float)x * ratio;
 	case 2:
-		return (x * ratio) / zoom + offsetX;
+		return ((float)x * ratio) / (float)zoom + offsetX;
 	default:
 		throw "Invalid argument";
 	}
 }
 
 //Y koordinatat atkonvertal mezo koordinatava
-int convertPixelY(int y) {
+float pixelToFieldY(int y) {
 	switch (zoom)
 	{
 	case 1:
-		return fieldHeight - y * ratio;
+		return fieldHeight - (float)y * ratio;
 	case 2:
-		return fieldHeight - ((y * ratio) / zoom + offsetY);
+		return fieldHeight - (((float)y * ratio) / (float)zoom + offsetY);
 	default:
 		throw "Invalid argument";
 	}
@@ -417,7 +417,7 @@ void drawParabola() {
 	{
 		for (int x = 0; x < 600; x++)
 		{
-			Vector p = Vector(convertPixelX(x), convertPixelY(y));
+			Vector p = Vector(pixelToFieldX(x), pixelToFieldY(y));
 			if (isInParabola(directrix1, directrix2, focus, p)) {
 				image[y*screenWidth + x] = Color(1, 0, 0);
 			}
@@ -473,26 +473,11 @@ void onKeyboard(unsigned char key, int x, int y) {
 		// TODO zoom in and start moving, disable all inputs
 		zoom = 2;
 		gluOrtho2D(-0.5, 0.5, -0.5, 0.5);
-	}
-
-	if (key == 'w') {
-		offsetY++;
-		glTranslatef(0, -0.002f, 0);
-	}
-	if (key == 'a') {
-		offsetX--;
-		glTranslatef(0.002f, 0, 0);
-	}
-	if (key == 's') {
-		offsetY--;
-		glTranslatef(0, 0.002f, 0);
-	}
-	if (key == 'd') {
-		offsetX++;
-		glTranslatef(-0.002f, 0, 0);
+		float angle = (float)(glutGet(GLUT_ELAPSED_TIME) % 360) * (M_PI / 180.0f);
+		float v = 3;
+		cameraSpeed = Vector(v * cosf(angle), v * sinf(angle));
 	}
 	glutPostRedisplay();
-
 }
 
 // Billentyuzet esemenyeket lekezelo fuggveny (felengedes)
@@ -539,6 +524,19 @@ void onMouseMotion(int x, int y)
 // `Idle' esemenykezelo, jelzi, hogy az ido telik, az Idle esemenyek frekvenciajara csak a 0 a garantalt minimalis ertek
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME);		// program inditasa ota eltelt ido
+	if (zoom == 2) {
+		if (lastTimeStamp != -1) {
+			long dt = time - lastTimeStamp;
+
+			offsetX += cameraSpeed.x / 1000.0f * dt;
+			offsetY += cameraSpeed.y / 1000.0f * dt;
+
+			glTranslatef((-cameraSpeed.x / 1000.0f / 500.f * dt), (-cameraSpeed.y / 1000.0f / 500.f * dt), 0);
+
+			glutPostRedisplay();
+		}
+		lastTimeStamp = time;
+	}
 }
 
 // ...Idaig modosithatod
