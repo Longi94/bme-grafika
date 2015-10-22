@@ -12,6 +12,22 @@ Minden, a feladat szövege által nem specifikált részlet szabadon megválaszt
 
 Beadási határidő: **2015. 10. 17. 23:59**
 
+### Második feladat
+
+Készítsen sugárkövető programot, amely egy szobát és az abban mozgó üveg ellipszoidot jelenít meg mozgó pontszerű fényforrás megvilágítása mellett. A virtuális világban a fény terjedési sebessége 1 m/s. A szoba egyik oldala aranyból van, optikailag sima és forgásparaboloid geometriájú. A szoba többi oldala diffúz és valamilyen mintával textúrázott sík. A szoba mérete 10 m x 10 m x 10 m volna, ha eltekintenénk a paraboloid kitüremkedésétől.
+
+Az üveg ellipszoid tengelyei a világkoordinátarendszer egyik tengelyével sem párhuzamosak. A leghosszabb tengely 2 m, a legrövidebb 0.5 m. Az ellipszoid egyenes vonalú egyenletes mozgást véget a szoba sarkából 0.5 m/sec sebességgel úgy, hogy legalább 10 másodpercig a szoba belsejében tartózkodik, mialatt a kamerából látható.
+
+A pont fényforrás ugyancsak egyenesvonalú egyenletes mozgást végez úgy, hogy az első 10 másodpercben a szoba beljesében van.
+
+A programnak a SPACE lenyomásának időpontjában keletkezett képet kell megjelenítenie.
+
+Az arany törésmutatója és kioltási tényezője: r: 0.17/3.1, g: 0.35/2.7, b: 1.5/1.9
+
+Az üveg törésmutatója és kioltási tényezője: r: 1.5/0, g: 1.5/0, b: 1.5/0
+
+Beadási határidő: **2015. 11. 08. 23:59**
+
 ### A megoldás módja
 
 A feladatot C++ nyelven kell megvalósítani [**OpenGL**](http://www.opengl.org/) és [**GLUT**](http://www.opengl.org/resources/libraries/glut/) felhasználásával az alábbi [**sablon**](https://cg.iit.bme.hu/grafhazi/content/cg_template_2014_1.cpp) módosításával. A feladat megoldása során implementálni kell az **onInitialization(), onDisplay(), onKeyboard(), onMouse(), onMouseMotion()** és **onIdle()** függvényeket. Amennyiben a feladat megköveteli természetesen létrehozhatsz segédfüggvényeket is. Fontos azonban, hogy csak a jelzett részen belül található programrészeket értékeljük.
