@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7DAC7BE8-2889-4092-8682-DAF4F75B01AC}</ProjectGuid>
+    <ProjectGuid>{9CDAF816-70F4-4EE8-AC56-8CB1A0D13B92}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>grafika2</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
