@@ -62,9 +62,6 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
-//--------------------------------------------------------
-// 3D Vektor
-//--------------------------------------------------------
 struct Vector {
 	float x, y, z;
 
@@ -83,18 +80,15 @@ struct Vector {
 	Vector operator-(const Vector& v) {
 		return Vector(x - v.x, y - v.y, z - v.z);
 	}
-	float operator*(const Vector& v) { 	// dot product
+	float operator*(const Vector& v) {
 		return (x * v.x + y * v.y + z * v.z);
 	}
-	Vector operator%(const Vector& v) { 	// cross product
+	Vector operator%(const Vector& v) {
 		return Vector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 	}
 	float Length() { return sqrt(x * x + y * y + z * z); }
 };
 
-//--------------------------------------------------------
-// Spektrum illetve szin
-//--------------------------------------------------------
 struct Color {
 	float r, g, b;
 
@@ -115,73 +109,53 @@ struct Color {
 	}
 };
 
-const int screenWidth = 600;	// alkalmaz??s ablak felbont??sa
+const int screenWidth = 600;
 const int screenHeight = 600;
 
+const float c = 1.0f;
 
-Color image[screenWidth*screenHeight];	// egy alkalmaz??s ablaknyi k?©p
+const float roomX = 10.0f;
+const float roomY = 10.0f;
+const float roomZ = 10.0f;
 
+Color image[screenWidth*screenHeight];
 
-										// Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
-void onInitialization() {
+void onInitialization()
+{
 	glViewport(0, 0, screenWidth, screenHeight);
+}
 
-	// Peldakent keszitunk egy kepet az operativ memoriaba
-	for (int Y = 0; Y < screenHeight; Y++)
-		for (int X = 0; X < screenWidth; X++)
-			image[Y*screenWidth + X] = Color((float)X / screenWidth, (float)Y / screenHeight, 0);
+void onDisplay()
+{
+	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glutSwapBuffers();
 
 }
 
-// Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
-void onDisplay() {
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);		// torlesi szin beallitasa
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
-
-														// ..
-
-														// Peldakent atmasoljuk a kepet a rasztertarba
-	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
-	// Majd rajzolunk egy kek haromszoget
-	glColor3f(0, 0, 1);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-0.2f, -0.2f);
-	glVertex2f(0.2f, -0.2f);
-	glVertex2f(0.0f, 0.2f);
-	glEnd();
-
-	// ...
-
-	glutSwapBuffers();     				// Buffercsere: rajzolas vege
+void onKeyboard(unsigned char key, int x, int y)
+{
 
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (lenyomas)
-void onKeyboard(unsigned char key, int x, int y) {
-	if (key == 'd') glutPostRedisplay(); 		// d beture rajzold ujra a kepet
+void onKeyboardUp(unsigned char key, int x, int y)
+{
 
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (felengedes)
-void onKeyboardUp(unsigned char key, int x, int y) {
+void onMouse(int button, int state, int x, int y)
+{
 
 }
 
-// Eger esemenyeket lekezelo fuggveny
-void onMouse(int button, int state, int x, int y) {
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)   // A GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON illetve GLUT_DOWN / GLUT_UP
-		glutPostRedisplay(); 						 // Ilyenkor rajzold ujra a kepet
-}
-
-// Eger mozgast lekezelo fuggveny
 void onMouseMotion(int x, int y)
 {
 
 }
 
-// `Idle' esemenykezelo, jelzi, hogy az ido telik, az Idle esemenyek frekvenciajara csak a 0 a garantalt minimalis ertek
-void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME);		// program inditasa ota eltelt ido
+void onIdle()
+{
 
 }
 
