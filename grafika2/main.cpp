@@ -189,7 +189,8 @@ struct Camera {
 	Vector right;
 
 	Ray getRay(int x, int y) {
-		Vector direction = lookat + right * (2 * x / XM - 1) + up * (2 * x / XM - 1);
+		Vector pixel = lookat + right * (2 * x / XM - 1) + up * (2 * x / XM - 1);
+		Vector direction = pixel = eye;
 		return Ray(eye, direction);
 	}
 };
