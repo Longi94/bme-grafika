@@ -109,20 +109,100 @@ struct Color {
 	}
 };
 
-const int screenWidth = 600;
-const int screenHeight = 600;
+struct Hit {
+	float t;
+	Vector position, normal;
+	Material* material;
+
+	Hit() {
+		t = -1;
+	}
+};
+
+struct Ray {
+	Vector p, d;
+
+	Ray(Vector point, Vector direction) {
+		p = point;
+		d = direction;
+	}
+};
+
+class Material {
+	Vector F0, kd, ks;
+	float n, snininess;
+public:
+	virtual bool isReflective() = 0;
+	virtual bool isRefractive() = 0;
+	virtual Vector reflect(Vector& inDir, Vector& normal) = 0;
+	virtual Vector refract(Vector& inDir, Vector& normal) = 0;
+	//virtual int getReflectance() = 0;
+	//virtual int getTransmittance() = 0;
+	virtual Vector shade(Vector& normal, Vector& viewDir, Vector& lightDir, Vector& inRad) = 0;
+};
+
+class Intersectable {
+protected:
+	Material* metarial;
+public:
+	virtual Hit intersect(const Ray& ray) = 0;
+};
+
+class Plane : public Intersectable {
+	Vector p, n;
+public:
+	Hit intersect(const Ray& ray) {
+
+	}
+};
+
+class Ellipsoid : public Intersectable {
+
+public:
+	Hit intersect(const Ray& ray) {
+
+	}
+};
+
+class Paraboloid : public Intersectable {
+	Vector p, n, f;
+public:
+	Hit intersect(const Ray& ray) {
+
+	}
+};
 
 const float c = 1.0f;
+
+struct LightSource {
+
+};
+
+struct Camera {
+	static const int XM = 600;
+	static const int YM = 600;
+
+	Vector eye;
+	Vector lookat;
+
+	Vector up;
+	Vector right;
+
+	Ray getRay(int x, int y) {
+		Vector direction = lookat + right * (2 * x / XM - 1) + up * (2 * x / XM - 1);
+		return Ray(eye, direction);
+	}
+};
 
 const float roomX = 10.0f;
 const float roomY = 10.0f;
 const float roomZ = 10.0f;
 
-Color image[screenWidth*screenHeight];
+Color image[Camera::XM*Camera::YM];
 
 void onInitialization()
 {
-	glViewport(0, 0, screenWidth, screenHeight);
+	glViewport(0, 0, Camera::XM, Camera::YM);
 }
 
 void onDisplay()
