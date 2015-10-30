@@ -115,17 +115,6 @@ struct Color {
 	}
 };
 
-//Talalat!!
-struct Hit {
-	float t; //Ido
-	Vector position, normal; //Az utkozes poxicioja, es a felulet normal vektora
-	Material* material; //A felulet anyaga
-
-	Hit() {
-		t = -1;
-	}
-};
-
 //Kibaszott sugar
 struct Ray {
 	Vector position, direction; //Kindulasi hely es iranya
@@ -139,17 +128,33 @@ struct Ray {
 //Anyag interfesz (abstract)
 class Material {
 protected:
-	Vector F0, kd, ks;
-	float n, shininess; //toresmutato es fenyesseg
+	//Smooth
+	Vector F0; //Fresnel cucc
+	float n; //toresmutato
+
+	//Rough
+	Vector kd, ks;
+	float shininess; //fenyesseg
 public:
 	virtual bool isReflective() = 0;
 	virtual bool isRefractive() = 0;
 	virtual Vector reflect(Vector& direction, Vector& normal) = 0;
 	virtual Vector refract(Vector& direction, Vector& normal) = 0;
-	//virtual int getReflectance() = 0; mennyire visszavero?
-	//virtual int getTransmittance() = 0; mennyire atengedo?
+	virtual int getReflectance() = 0; //mennyire visszavero?
+	virtual int getTransmittance() = 0; //mennyire atengedo?
 	virtual Vector shade(Vector& normal, Vector& viewDir, Vector& lightDir, Vector& inRad) = 0;
 	virtual Vector Fresnel(Vector& direction, Vector& normal) = 0;
+};
+
+//Talalat!!
+struct Hit {
+	float t; //Ido
+	Vector position, normal; //Az utkozes poxicioja, es a felulet normal vektora
+	Material *material; //A felulet anyaga
+
+	Hit() {
+		t = -1;
+	}
 };
 
 //Sima felulet, a sugar siman visszaverodik es/vagy torik
@@ -224,7 +229,7 @@ public:
 //Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
-	Material* metarial;
+	Material* material;
 public:
 	virtual Hit intersect(const Ray& ray) = 0;
 };
@@ -243,7 +248,7 @@ class Ellipsoid : public Intersectable {
 
 public:
 	Hit intersect(const Ray& ray) {
-
+		// TODO
 	}
 };
 
@@ -252,7 +257,7 @@ class Paraboloid : public Intersectable {
 	Vector point, normal, focus;
 public:
 	Hit intersect(const Ray& ray) {
-
+		// TODO
 	}
 };
 
@@ -260,7 +265,8 @@ const float c = 1.0f;
 
 // Fenyforras
 struct LightSource {
-
+	Vector position;
+	Color color;
 };
 
 struct Camera {
@@ -286,15 +292,34 @@ const float roomZ = 10.0f;
 
 Color image[Camera::XM*Camera::YM];
 
+Intersectable* objects[7];
+
+void build() {
+
+}
+
+Hit firstIntersect(Ray ray) {
+	Hit firstHit;
+
+	return firstHit;
+}
+
+Color trace(Ray& ray) {
+	return Color(0, 0, 0);
+}
+
 void onInitialization()
 {
 	glViewport(0, 0, Camera::XM, Camera::YM);
+	build();
 }
 
 void onDisplay()
 {
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClearColor(0, 0, 0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glDrawPixels(Camera::XM, Camera::YM, GL_RGB, GL_FLOAT, image);
 
 	glutSwapBuffers();
 
