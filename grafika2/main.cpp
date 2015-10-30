@@ -113,12 +113,6 @@ struct Color {
 	Color operator+(const Color& c) { 
 		return Color(r + c.r, g + c.g, b + c.b); 
 	}
-	Color operator*(const Color& c) {
-		return Color(r * c.r, g * c.g, b * c.b);
-	}
-	Color operator+(const Color& c) {
-		return Color(r + c.r, g + c.g, b + c.b);
-	}
 	Color operator/(const Color& c) { 
 		return Color(r / c.r, g / c.g, b / c.b); 
 	}
@@ -130,6 +124,10 @@ struct Color {
 //Kibaszott sugar
 struct Ray {
 	Vector position, direction; //Kindulasi hely es iranya
+
+	Ray() {
+
+	}
 
 	Ray(Vector position, Vector direction) {
 		this->position = position;
@@ -188,6 +186,9 @@ public:
 	}
 
 	Vector refract(Vector& direction, Vector& normal) {
+
+	}
+	/*Vector refract(Vector& direction, Vector& normal) {
 		Color ior = n;
 
 		float cosalpha = -(normal * direction);
@@ -202,7 +203,7 @@ public:
 			return reflect(direction, normal);
 		}
 		return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
-	}
+	}*/
 
 	Color Fresnel(Vector& direction, Vector& normal) {
 		float cosalpha = fabsf(normal * direction);
@@ -217,6 +218,10 @@ public:
 //Rucskos anyag, a sugar szetverodik ezen, innen jon a szin
 class RoughMaterial : public Material {
 public:
+	RoughMaterial() {
+
+	}
+
 	RoughMaterial(Color kd, Color ks, float shininess) {
 		this->kd = kd;
 		this->ks = ks;
@@ -275,6 +280,10 @@ public:
 class Plane : public Intersectable {
 	Vector position, normal;
 public:
+	Plane() {
+
+	}
+
 	Plane(Vector position, Vector normal, Material* material) {
 		this->position = position;
 		this->normal = normal;
@@ -282,7 +291,7 @@ public:
 	}
 
 	Hit intersect(const Ray& ray) {
-
+		return Hit();
 	}
 };
 
@@ -331,6 +340,11 @@ struct Camera {
 
 Color image[Camera::XM*Camera::YM];
 
+Color nGold = Color(0.17f, 0.35f, 1.5f);
+Color kGold = Color(3.1f, 2.7f, 1.9f);
+Color nGlass = Color(1.5, 1.5, 1.5);
+Color kGlass = Color(0, 0, 0);
+
 Camera camera;
 Intersectable* objects[7];
 
@@ -341,7 +355,12 @@ Plane wallBack;
 Plane wallTop;
 Plane wallBottom;
 
-RoughMaterial rough;
+RoughMaterial roughRed;
+RoughMaterial roughGreen;
+RoughMaterial roughBlue;
+RoughMaterial roughYellow;
+RoughMaterial roughCyan;
+RoughMaterial roughMagenta;
 
 void build() {
 	//camera init
@@ -351,10 +370,15 @@ void build() {
 	camera.up = Vector(0, 1, 0);
 	camera.right = Vector(-1, 0, 0);
 
-	rough = RoughMaterial();
+	roughRed = RoughMaterial(Color(1, 0, 0), Color(1, 0, 0), 0);
+	roughGreen = RoughMaterial(Color(0, 1, 0), Color(1, 0, 0), 0);
+	roughBlue = RoughMaterial(Color(0, 0, 1), Color(1, 0, 0), 0);
+	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
+	roughCyan = RoughMaterial(Color(0, 1, 1), Color(1, 0, 0), 0);
+	roughMagenta = RoughMaterial(Color(1, 0, 1), Color(1, 0, 0), 0);
 
 	//flat walls init
-	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0));
+	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
 }
 
 Hit firstIntersect(Ray ray) {
