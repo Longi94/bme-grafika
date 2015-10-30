@@ -74,19 +74,25 @@ struct Vector {
 	Vector operator*(float a) {
 		return Vector(x * a, y * a, z * a);
 	}
+	Vector operator/(float a) {
+		return Vector(x / a, y / a, z / a);
+	}
 	Vector operator+(const Vector& v) {
 		return Vector(x + v.x, y + v.y, z + v.z);
 	}
 	Vector operator-(const Vector& v) {
 		return Vector(x - v.x, y - v.y, z - v.z);
 	}
-	float operator*(const Vector& v) {
+	float operator*(const Vector& v) { //dot
 		return (x * v.x + y * v.y + z * v.z);
 	}
-	Vector operator%(const Vector& v) {
+	Vector operator%(const Vector& v) { //cross
 		return Vector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 	}
 	float Length() { return sqrt(x * x + y * y + z * z); }
+	Vector normalize() {
+		return Vector(x / Length(), y / Length(), z / Length());
+	}
 };
 
 struct Color {
@@ -109,38 +115,113 @@ struct Color {
 	}
 };
 
+//Talalat!!
 struct Hit {
-	float t;
-	Vector position, normal;
-	Material* material;
+	float t; //Ido
+	Vector position, normal; //Az utkozes poxicioja, es a felulet normal vektora
+	Material* material; //A felulet anyaga
 
 	Hit() {
 		t = -1;
 	}
 };
 
+//Kibaszott sugar
 struct Ray {
-	Vector p, d;
+	Vector position, direction; //Kindulasi hely es iranya
 
-	Ray(Vector point, Vector direction) {
-		p = point;
-		d = direction;
+	Ray(Vector position, Vector direction) {
+		this->position = position;
+		this->direction = direction;
 	}
 };
 
+//Anyag interfesz (abstract)
 class Material {
+protected:
 	Vector F0, kd, ks;
-	float n, snininess;
+	float n, shininess; //toresmutato es fenyesseg
 public:
 	virtual bool isReflective() = 0;
 	virtual bool isRefractive() = 0;
-	virtual Vector reflect(Vector& inDir, Vector& normal) = 0;
-	virtual Vector refract(Vector& inDir, Vector& normal) = 0;
-	//virtual int getReflectance() = 0;
-	//virtual int getTransmittance() = 0;
+	virtual Vector reflect(Vector& direction, Vector& normal) = 0;
+	virtual Vector refract(Vector& direction, Vector& normal) = 0;
+	//virtual int getReflectance() = 0; mennyire visszavero?
+	//virtual int getTransmittance() = 0; mennyire atengedo?
 	virtual Vector shade(Vector& normal, Vector& viewDir, Vector& lightDir, Vector& inRad) = 0;
+	virtual Vector Fresnel(Vector& direction, Vector& normal) = 0;
 };
 
+//Sima felulet, a sugar siman visszaverodik es/vagy torik
+class SmoothMaterial : public Material {
+public:
+	bool isReflective() {
+		return true;
+	}
+
+	bool isRefractive() {
+		return true;
+	}
+
+	Vector reflect(Vector& direction, Vector& normal) {
+		return direction - normal * (normal * direction) * 2.0f;
+	}
+
+	Vector refract(Vector& direction, Vector& normal) {
+		float ior = n;
+
+		float cosalpha = -(normal * direction);
+		if (cosalpha < 0) {
+			cosalpha = -cosalpha;
+			normal = normal * (-1);
+			ior = 1.0 / n;
+		}
+
+		float disc = 1 - (1 - powf(cosalpha, 2)) / powf(ior, 2);
+		if (disc < 0) {
+			return reflect(direction, normal);
+		}
+		return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
+	}
+
+	Vector Fresnel(Vector& direction, Vector& normal) {
+		float cosalpha = fabsf(normal * direction);
+		return F0 + (Vector(1, 1, 1) - F0) * powf(1 - cosalpha, 5);
+	}
+};
+
+//Rucskos anyag, a sugar szetverodik ezen, innen jon a szin
+class RoughMaterial : public Material {
+public:
+	bool isReflective() {
+		return false;
+	}
+
+	bool isRefractive() {
+		return false;
+	}
+
+	Vector shade(Vector& normal, Vector& viewDir, Vector& lightDir, Vector& inRad) {
+		Vector reflRad = Vector(0, 0, 0);
+
+		float cosTheta = normal * lightDir;
+		if (cosTheta < 0) {
+			return reflRad;
+		}
+
+		reflRad = inRad % kd * cosTheta;
+		Vector halfway = (normal + halfway).normalize();
+
+		float cosDelta = normal * halfway;
+		if (cosDelta < 0) {
+			return reflRad;
+		}
+
+		return reflRad + inRad % ks * powf(cosDelta, shininess);
+	}
+};
+
+//Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
 	Material* metarial;
@@ -148,14 +229,16 @@ public:
 	virtual Hit intersect(const Ray& ray) = 0;
 };
 
+//Sik
 class Plane : public Intersectable {
-	Vector p, n;
+	Vector position, normal;
 public:
 	Hit intersect(const Ray& ray) {
 
 	}
 };
 
+//Ellipsoid
 class Ellipsoid : public Intersectable {
 
 public:
@@ -164,8 +247,9 @@ public:
 	}
 };
 
+//Ellipsoid
 class Paraboloid : public Intersectable {
-	Vector p, n, f;
+	Vector point, normal, focus;
 public:
 	Hit intersect(const Ray& ray) {
 
@@ -174,6 +258,7 @@ public:
 
 const float c = 1.0f;
 
+// Fenyforras
 struct LightSource {
 
 };
