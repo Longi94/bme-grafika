@@ -121,6 +121,8 @@ struct Color {
 	}
 };
 
+const float c = 1.0f;
+
 //Kibaszott sugar
 struct Ray {
 	Vector position, direction; //Kindulasi hely es iranya
@@ -273,7 +275,7 @@ class Intersectable {
 protected:
 	Material* material;
 public:
-	virtual Hit intersect(const Ray& ray) = 0;
+	virtual Hit intersect(Ray& ray) = 0;
 };
 
 //Sik
@@ -290,8 +292,29 @@ public:
 		this->material = material;
 	}
 
-	Hit intersect(const Ray& ray) {
-		return Hit();
+	Hit intersect(Ray& ray) {
+
+		float dot = normal * ray.direction;
+
+		if (dot == 0) { //sugar parhozamos a sikkal
+			return Hit();
+		}
+
+		Hit hit = Hit();
+		hit.material = material;
+		hit.normal = normal;
+
+		//https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection#Algebraic_form
+		float x = ((position - ray.direction) * normal) / dot;
+		Vector intersection = ray.direction * x + ray.position;
+
+		hit.position = intersection;
+
+		float d = sqrtf(powf(intersection.x + ray.position.x, 2) + powf(intersection.y + ray.position.y, 2));
+
+		hit.t = d / c;
+
+		return hit;
 	}
 };
 
@@ -299,7 +322,7 @@ public:
 class Ellipsoid : public Intersectable {
 
 public:
-	Hit intersect(const Ray& ray) {
+	Hit intersect(Ray& ray) {
 		// TODO
 	}
 };
@@ -308,12 +331,10 @@ public:
 class Paraboloid : public Intersectable {
 	Vector point, normal, focus;
 public:
-	Hit intersect(const Ray& ray) {
+	Hit intersect(Ray& ray) {
 		// TODO
 	}
 };
-
-const float c = 1.0f;
 
 // Fenyforras
 struct LightSource {
@@ -379,6 +400,11 @@ void build() {
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
+	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &roughRed);
+	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughRed);
+	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughRed);
+	wallTop = Plane(Vector(10, 10, 10), Vector(0, -0, 0), &roughRed);
+	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &roughRed);
 }
 
 Hit firstIntersect(Ray ray) {
