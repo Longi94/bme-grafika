@@ -44,6 +44,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
+#include <iostream>
 
 #if defined(__APPLE__)                                                                                                                                                                                                            
 #include <OpenGL/gl.h>                                                                                                                                                                                                            
@@ -251,7 +252,7 @@ public:
 	}
 
 	Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
-		Color radOut = Color(0, 0, 0);
+		Color radOut;
 
 		float cosTheta = normal * lightDir; //Lambert trv
 		if (cosTheta < 0) {
@@ -259,7 +260,7 @@ public:
 		}
 
 		radOut = radIn * kd * cosTheta;
-		Vector halfway = (normal + halfway).norm();
+		Vector halfway = (viewDir + lightDir).norm();
 
 		float cosDelta = normal * halfway;
 		if (cosDelta < 0) {
@@ -305,12 +306,15 @@ public:
 		hit.normal = normal;
 
 		//https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection#Algebraic_form
-		float x = ((position - ray.direction) * normal) / dot;
+		float x = ((position - ray.position) * normal) / dot;
+		if (x < 0) {
+			return Hit(); //A metszett hatrafele van
+		}
 		Vector intersection = ray.direction * x + ray.position;
 
 		hit.position = intersection;
 
-		float d = sqrtf(powf(intersection.x + ray.position.x, 2) + powf(intersection.y + ray.position.y, 2));
+		float d = sqrtf(powf(intersection.x - ray.position.x, 2) + powf(intersection.y - ray.position.y, 2) + powf(intersection.z - ray.position.z, 2));
 
 		hit.t = d / c;
 
@@ -356,9 +360,9 @@ struct Camera {
 	Vector up;
 	Vector right;
 
-	Ray getRay(int x, int y) {
-		Vector pixel = lookat + right * (2 * x / XM - 1) + up * (2 * x / XM - 1);
-		Vector direction = pixel = eye;
+	Ray getRay(float x, float y) {
+		Vector pixel = lookat + right * (2 * x / XM - 1) + up * (2 * y / YM - 1);
+		Vector direction = pixel - eye;
 		return Ray(eye, direction);
 	}
 };
@@ -392,10 +396,10 @@ LightSource light;
 void build() {
 	//camera init
 	camera = Camera();
-	camera.eye = Vector(5, 5, 0);
+	camera.eye = Vector(5, 5, 0.1f);
 	camera.lookat = Vector(5, 5, 2);
-	camera.up = Vector(0, 1, 0);
-	camera.right = Vector(-1, 0, 0);
+	camera.up = Vector(0, 2, 0);
+	camera.right = Vector(-2, 0, 0);
 
 	roughRed = RoughMaterial(Color(1, 0, 0), Color(1, 0, 0), 0);
 	roughGreen = RoughMaterial(Color(0, 1, 0), Color(1, 0, 0), 0);
@@ -406,11 +410,11 @@ void build() {
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
-	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &roughRed);
-	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughRed);
-	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughRed);
-	wallTop = Plane(Vector(10, 10, 10), Vector(0, -0, 0), &roughRed);
-	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &roughRed);
+	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &roughGreen);
+	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughBlue);
+	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
+	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &roughCyan);
+	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &roughMagenta);
 
 	objects[0] = &wallLeft;
 	objects[1] = &wallRight;
@@ -459,8 +463,9 @@ Color trace(Ray ray, int depth) {
 
 	Ray shadowRay = Ray(hit.position, lightDir);
 	Hit shadowHit = firstIntersect(shadowRay);
-	if (shadowHit.t < 0 || shadowHit.t >(hit.position - light.position).Length()) {
-		outRadiance = outRadiance + hit.material->shade(hit.normal, ray.direction, lightDir, light.color); //nem jooo
+	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
+		//lightDist = sqrtf(powf(hit.position.x - light.position.position.x, 2) + powf(hit.position.y - light.position.position.y, 2) + powf(hit.position.z - light.position.position.z, 2));
+		outRadiance = outRadiance + hit.material->shade(hit.normal, ray.direction, lightDir.norm(), light.color); //nem jooo
 	}
 
 	if (hit.material->isReflective()) {
@@ -470,8 +475,8 @@ Color trace(Ray ray, int depth) {
 	}
 	if (hit.material->isRefractive()) {
 		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
-		Ray reflectedRay(hit.position, reflectionDir);
-		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
+		Ray refractedRay(hit.position, reflectionDir);
+		outRadiance = outRadiance + trace(refractedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
 	}
 
 	return outRadiance;
