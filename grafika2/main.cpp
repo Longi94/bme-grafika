@@ -266,6 +266,24 @@ public:
 	}
 };
 
+class GlassMaterial : public Material {
+	Color k = Color(0, 0, 0);
+public:
+	GlassMaterial() {
+		this->n = Color(1.5, 1.5, 1.5);
+		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
+
+		this->kd = Color(1, 1, 1);
+	}
+
+	bool isReflective() {
+		return true;
+	}
+	bool isRefractive() {
+		return true;
+	}
+};
+
 //Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
@@ -309,7 +327,7 @@ public:
 
 		hit.position = intersection;
 
-		float d = sqrtf(powf(intersection.x - ray.position.x, 2) + powf(intersection.y - ray.position.y, 2) + powf(intersection.z - ray.position.z, 2));
+		float d = (intersection - ray.position).Length();
 
 		hit.t = d / c;
 
@@ -326,7 +344,7 @@ public:
 	}
 };
 
-//Ellipsoid
+//Paraboloid
 class Paraboloid : public Intersectable {
 	Vector point, normal, focus;
 public:
@@ -363,8 +381,6 @@ struct Camera {
 };
 
 Color image[Camera::XM*Camera::YM];
-Color nGlass = Color(1.5, 1.5, 1.5);
-Color kGlass = Color(0, 0, 0);
 
 Camera camera;
 Intersectable* objects[7];
@@ -456,7 +472,7 @@ Color trace(Ray ray, int depth) {
 	Ray shadowRay = Ray(hit.position, lightDir);
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
-		//lightDist = sqrtf(powf(hit.position.x - light.position.position.x, 2) + powf(hit.position.y - light.position.position.y, 2) + powf(hit.position.z - light.position.position.z, 2));
+		//lightDist = (hit.position - light.position).Length();
 		outRadiance = outRadiance + hit.material->shade(hit.normal, ray.direction, lightDir.norm(), light.color); //nem jooo
 	}
 
