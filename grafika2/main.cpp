@@ -150,11 +150,56 @@ protected:
 	float shininess; //fenyesseg
 public:
 	virtual bool isReflective() = 0;
-	virtual bool isRefractive() = 0;
-	virtual Vector reflect(Vector& direction, Vector& normal) = 0;
-	virtual Vector refract(Vector& direction, Vector& normal) = 0;
-	virtual Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) = 0;
-	virtual Color Fresnel(Vector& direction, Vector& normal) = 0;
+	virtual bool isRefractive() = 0; 
+	
+	Vector reflect(Vector& direction, Vector& normal) {
+		return direction - normal * (normal * direction) * 2.0f;
+	}
+
+	Vector refract(Vector& direction, Vector& normal) {
+		return Vector();
+	}
+
+	/*Vector refract(Vector& direction, Vector& normal) {
+	Color ior = n;
+
+	float cosalpha = -(normal * direction);
+	if (cosalpha < 0) {
+	cosalpha = -cosalpha;
+	normal = normal * (-1);
+	ior = 1.0 / n;
+	}
+
+	float disc = 1 - (1 - powf(cosalpha, 2)) / powf(ior, 2);
+	if (disc < 0) {
+	return reflect(direction, normal);
+	}
+	return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
+	}*/
+
+	Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
+		Color radOut;
+
+		float cosTheta = normal * lightDir; //Lambert trv
+		if (cosTheta < 0) {
+			return radOut;
+		}
+
+		radOut = radIn * kd * cosTheta;
+		Vector halfway = (viewDir + lightDir).norm();
+
+		float cosDelta = normal * halfway;
+		if (cosDelta < 0) {
+			return radOut;
+		}
+
+		return radOut + radIn * ks * powf(cosDelta, shininess);
+	}
+
+	Color Fresnel(Vector& direction, Vector& normal) {
+		float cosalpha = fabsf(normal * direction);
+		return F0 + (Color(1, 1, 1) - F0) * powf(1 - cosalpha, 5);
+	}
 };
 
 //Talalat!!
@@ -171,50 +216,12 @@ struct Hit {
 //Sima felulet, a sugar siman visszaverodik es/vagy torik
 class SmoothMaterial : public Material {
 public:
-	SmoothMaterial(Color n, Color k) {
-		this->n = n;
-		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
-	}
-
 	bool isReflective() {
 		return true;
 	}
 
 	bool isRefractive() {
 		return true;
-	}
-
-	Vector reflect(Vector& direction, Vector& normal) {
-		return direction - normal * (normal * direction) * 2.0f;
-	}
-
-	Vector refract(Vector& direction, Vector& normal) {
-
-	}
-	/*Vector refract(Vector& direction, Vector& normal) {
-		Color ior = n;
-
-		float cosalpha = -(normal * direction);
-		if (cosalpha < 0) {
-			cosalpha = -cosalpha;
-			normal = normal * (-1);
-			ior = 1.0 / n;
-		}
-
-		float disc = 1 - (1 - powf(cosalpha, 2)) / powf(ior, 2);
-		if (disc < 0) {
-			return reflect(direction, normal);
-		}
-		return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
-	}*/
-
-	Color Fresnel(Vector& direction, Vector& normal) {
-		float cosalpha = fabsf(normal * direction);
-		return F0 + (Color(1, 1, 1) - F0) * powf(1 - cosalpha, 5);
-	}
-
-	Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
-		return (Color(0, 0, 0)); //unused
 	}
 };
 
@@ -238,36 +245,24 @@ public:
 	bool isRefractive() {
 		return false;
 	}
+};
 
-	Vector reflect(Vector& direction, Vector& normal) {
-		return Vector(0, 0, 0); //unused
+//Gooooolden
+class GoldMaterial : public Material {
+	Color k = Color(3.1f, 2.7f, 1.9f);
+public:
+	GoldMaterial() {
+		this->n = Color(0.17f, 0.35f, 1.5f);
+		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
+
+		this->kd = Color(1, 0.84f, 0);
 	}
 
-	Vector refract(Vector& direction, Vector& normal) {
-		return Vector(0, 0, 0); //unused
+	bool isReflective() {
+		return true;
 	}
-
-	Color Fresnel(Vector& direction, Vector& normal) {
-		return Color(0, 0, 0); //unused
-	}
-
-	Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
-		Color radOut;
-
-		float cosTheta = normal * lightDir; //Lambert trv
-		if (cosTheta < 0) {
-			return radOut;
-		}
-
-		radOut = radIn * kd * cosTheta;
-		Vector halfway = (viewDir + lightDir).norm();
-
-		float cosDelta = normal * halfway;
-		if (cosDelta < 0) {
-			return radOut;
-		}
-
-		return radOut + radIn * ks * powf(cosDelta, shininess);
+	bool isRefractive() {
+		return false;
 	}
 };
 
@@ -368,9 +363,6 @@ struct Camera {
 };
 
 Color image[Camera::XM*Camera::YM];
-
-Color nGold = Color(0.17f, 0.35f, 1.5f);
-Color kGold = Color(3.1f, 2.7f, 1.9f);
 Color nGlass = Color(1.5, 1.5, 1.5);
 Color kGlass = Color(0, 0, 0);
 
@@ -385,11 +377,12 @@ Plane wallTop;
 Plane wallBottom;
 
 RoughMaterial roughRed;
-RoughMaterial roughGreen;
 RoughMaterial roughBlue;
 RoughMaterial roughYellow;
 RoughMaterial roughCyan;
 RoughMaterial roughMagenta;
+
+GoldMaterial gold;
 
 LightSource light;
 
@@ -402,7 +395,6 @@ void build() {
 	camera.right = Vector(-2, 0, 0);
 
 	roughRed = RoughMaterial(Color(1, 0, 0), Color(1, 0, 0), 0);
-	roughGreen = RoughMaterial(Color(0, 1, 0), Color(1, 0, 0), 0);
 	roughBlue = RoughMaterial(Color(0, 0, 1), Color(1, 0, 0), 0);
 	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
 	roughCyan = RoughMaterial(Color(0, 1, 1), Color(1, 0, 0), 0);
@@ -410,7 +402,7 @@ void build() {
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
-	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &roughGreen);
+	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &gold);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughBlue);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &roughCyan);
