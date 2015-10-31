@@ -340,6 +340,10 @@ public:
 struct LightSource {
 	Vector position;
 	Color color;
+public:
+	LightSource() {
+
+	}
 };
 
 struct Camera {
@@ -383,6 +387,8 @@ RoughMaterial roughYellow;
 RoughMaterial roughCyan;
 RoughMaterial roughMagenta;
 
+LightSource light;
+
 void build() {
 	//camera init
 	camera = Camera();
@@ -412,6 +418,10 @@ void build() {
 	objects[3] = &wallBack;
 	objects[4] = &wallTop;
 	objects[5] = &wallBottom;
+
+	//light init
+	light.color = Color(1, 1, 1);
+	light.position = Vector(5, 5, 5);
 }
 
 Hit firstIntersect(Ray ray) {
@@ -430,14 +440,53 @@ Hit firstIntersect(Ray ray) {
 	return firstHit;
 }
 
-Color trace(Ray& ray) {
-	return Color(0, 0, 0);
+const int maxDepth = 10;
+
+Color trace(Ray ray, int depth) {
+
+	Color outRadiance;
+
+	if (depth > maxDepth) {
+		return outRadiance;
+	}
+
+	Hit hit = firstIntersect(ray);
+	if (hit.t < 0) {
+		return outRadiance;
+	}
+
+	Vector lightDir = light.position - hit.position;
+
+	Ray shadowRay = Ray(hit.position, lightDir);
+	Hit shadowHit = firstIntersect(shadowRay);
+	if (shadowHit.t < 0 || shadowHit.t >(hit.position - light.position).Length()) {
+		outRadiance = outRadiance + hit.material->shade(hit.normal, ray.direction, lightDir, light.color); //nem jooo
+	}
+
+	if (hit.material->isReflective()) {
+		Vector reflectionDir = hit.material->reflect(ray.direction, hit.normal);
+		Ray reflectedRay(hit.position, reflectionDir);
+		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * hit.material->Fresnel(ray.direction, hit.normal);
+	}
+	if (hit.material->isRefractive()) {
+		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
+		Ray reflectedRay(hit.position, reflectionDir);
+		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
+	}
+
+	return outRadiance;
 }
 
 void onInitialization()
 {
 	glViewport(0, 0, Camera::XM, Camera::YM);
 	build();
+
+	for (int Y = 0; Y < Camera::XM; Y++)
+		for (int X = 0; X < Camera::YM; X++) {
+			Ray ray = camera.getRay(X, Y);
+			image[Y*Camera::XM + X] = trace(ray, 0);
+		}
 }
 
 void onDisplay()
