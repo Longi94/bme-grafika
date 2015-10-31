@@ -405,10 +405,27 @@ void build() {
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughRed);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -0, 0), &roughRed);
 	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &roughRed);
+
+	objects[0] = &wallLeft;
+	objects[1] = &wallRight;
+	objects[2] = &wallFront;
+	objects[3] = &wallBack;
+	objects[4] = &wallTop;
+	objects[5] = &wallBottom;
 }
 
 Hit firstIntersect(Ray ray) {
 	Hit firstHit;
+
+	for (Intersectable* obj : objects) {
+		if (obj != 0) {
+			Hit hit = obj->intersect(ray);
+
+			if (hit.t > 0 && (firstHit.t < 0 || firstHit.t > hit.t)) {
+				firstHit = hit;
+			}
+		}
+	}
 
 	return firstHit;
 }
