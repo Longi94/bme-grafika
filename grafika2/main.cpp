@@ -145,12 +145,12 @@ protected:
 	Color F0; //Fresnel, anyagra jellemzo const: ((n-1)*(n-1) + k*k) / ((n+1)*(n+1) + k*k)
 	Color n; //toresmutato
 
-	//Rough
-	Color kd, ks; //diffuz tul (szin)
 	float shininess; //fenyesseg
 public:
 	virtual bool isReflective() = 0;
 	virtual bool isRefractive() = 0; 
+	virtual Color getDiffuseColor(Vector& position) = 0;
+	virtual Color getShineColor(Vector& position) = 0;
 	
 	Vector reflect(Vector& direction, Vector& normal) {
 		return direction - normal * (normal * direction) * 2.0f;
@@ -177,13 +177,15 @@ public:
 	return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
 	}*/
 
-	Color shade(Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
+	Color shade(Vector& position, Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
 		Color radOut;
 
 		float cosTheta = normal * lightDir; //Lambert trv
 		if (cosTheta < 0) {
 			return radOut;
 		}
+
+		Color kd = getDiffuseColor(position);
 
 		radOut = radIn * kd * cosTheta;
 		Vector halfway = (viewDir + lightDir).norm();
@@ -192,6 +194,8 @@ public:
 		if (cosDelta < 0) {
 			return radOut;
 		}
+
+		Color ks = getShineColor(position);
 
 		return radOut + radIn * ks * powf(cosDelta, shininess);
 	}
@@ -215,6 +219,7 @@ struct Hit {
 
 //Sima felulet, a sugar siman visszaverodik es/vagy torik
 class SmoothMaterial : public Material {
+	Color kd, ks;
 public:
 	bool isReflective() {
 		return true;
@@ -223,10 +228,19 @@ public:
 	bool isRefractive() {
 		return true;
 	}
+
+	Color getDiffuseColor(Vector& position) {
+		return kd;
+	}
+
+	Color getShineColor(Vector& position) {
+		return ks;
+	}
 };
 
 //Rucskos anyag, a sugar szetverodik ezen, innen jon a szin
 class RoughMaterial : public Material {
+	Color kd, ks;
 public:
 	RoughMaterial() {
 
@@ -245,6 +259,14 @@ public:
 	bool isRefractive() {
 		return false;
 	}
+
+	Color getDiffuseColor(Vector& position) {
+		return kd;
+	}
+
+	Color getShineColor(Vector& position) {
+		return ks;
+	}
 };
 
 //Gooooolden
@@ -254,8 +276,6 @@ public:
 	GoldMaterial() {
 		this->n = Color(0.17f, 0.35f, 1.5f);
 		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
-
-		this->kd = Color(1, 0.84f, 0);
 	}
 
 	bool isReflective() {
@@ -263,6 +283,13 @@ public:
 	}
 	bool isRefractive() {
 		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		return Color(1, 0.84f, 0); //gold
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
 	}
 };
 
@@ -272,8 +299,6 @@ public:
 	GlassMaterial() {
 		this->n = Color(1.5, 1.5, 1.5);
 		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
-
-		this->kd = Color(1, 1, 1);
 	}
 
 	bool isReflective() {
@@ -281,6 +306,46 @@ public:
 	}
 	bool isRefractive() {
 		return true;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		return Color(1, 1, 1); //gold
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
+	}
+};
+
+class ConcentricCircles : public Material {
+	Vector center;
+	float bandWidth;
+	Color c1, c2;
+public:
+	ConcentricCircles(Vector center, float bandWidth, Color c1, Color c2) {
+		this->center = center;
+		this->bandWidth = bandWidth;
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	bool isReflective() {
+		return false;
+	}
+	bool isRefractive() {
+		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		float d = (position - center).Length();
+
+		if (fmodf(d, bandWidth) > (bandWidth / 2.0)) {
+			return c2;
+		}
+		else {
+			return c1;
+		}
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
 	}
 };
 
@@ -357,10 +422,6 @@ public:
 struct LightSource {
 	Vector position;
 	Color color;
-public:
-	LightSource() {
-
-	}
 };
 
 struct Camera {
@@ -398,7 +459,9 @@ RoughMaterial roughYellow;
 RoughMaterial roughCyan;
 RoughMaterial roughMagenta;
 
-GoldMaterial gold;
+ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(1, 0, 0), Color(1, 1, 1));
+
+GoldMaterial goldMaterial;
 
 LightSource light;
 
@@ -418,11 +481,11 @@ void build() {
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
-	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &gold);
+	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &goldMaterial);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughBlue);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &roughCyan);
-	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &roughMagenta);
+	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
 
 	objects[0] = &wallLeft;
 	objects[1] = &wallRight;
@@ -473,7 +536,7 @@ Color trace(Ray ray, int depth) {
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
 		//lightDist = (hit.position - light.position).Length();
-		outRadiance = outRadiance + hit.material->shade(hit.normal, ray.direction, lightDir.norm(), light.color); //nem jooo
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.color); //nem jooo
 	}
 
 	if (hit.material->isReflective()) {
