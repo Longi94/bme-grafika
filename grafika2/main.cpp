@@ -63,6 +63,9 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
+const float c = 1.0f;
+const float EPSILON = 0.0001f;
+
 struct Vector {
 	float x, y, z;
 
@@ -108,6 +111,9 @@ struct Color {
 	Color operator*(float a) {
 		return Color(r * a, g * a, b * a);
 	}
+	Color operator/(float a) {
+		return Color(r / a, g / a, b / a);
+	}
 	Color operator*(const Color& c) { 
 		return Color(r * c.r, g * c.g, b * c.b); 
 	}
@@ -122,8 +128,7 @@ struct Color {
 	}
 };
 
-const float c = 1.0f;
-const float epsilon = 0.0001f;
+const Color AMBIENT(0.1f, 0.1f, 0.1f);
 
 //Kibaszott sugar
 struct Ray {
@@ -208,37 +213,6 @@ struct Hit {
 
 	Hit() {
 		t = -1;
-	}
-};
-
-//Rucskos anyag, a sugar szetverodik ezen, innen jon a szin
-class RoughMaterial : public Material {
-	Color kd, ks;
-public:
-	RoughMaterial() {
-
-	}
-
-	RoughMaterial(Color kd, Color ks, float shininess) {
-		this->kd = kd;
-		this->ks = ks;
-		this->shininess = shininess;
-	}
-
-	bool isReflective() {
-		return false;
-	}
-
-	bool isRefractive() {
-		return false;
-	}
-
-	Color getDiffuseColor(Vector& position) {
-		return kd;
-	}
-
-	Color getShineColor(Vector& position) {
-		return ks;
 	}
 };
 
@@ -610,6 +584,11 @@ public:
 struct LightSource {
 	Vector position;
 	Color color;
+
+	Color getLuminance(Vector& position) {
+		float d = (this->position - position).Length();
+		return color / powf(d, 2) * 30;
+	}
 };
 
 struct Camera {
@@ -643,8 +622,6 @@ Plane wallBottom;
 Ellipsoid ellipsoid;
 Paraboloid paraboloid;
 
-RoughMaterial roughYellow;
-
 ConcentricCircles concetricCircles(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 Checkers checkers(1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 CheckersDiagonal checkersDiagonal(Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
@@ -661,10 +638,8 @@ void build() {
 	camera = Camera();
 	camera.eye = Vector(5, 5, 0.001f);
 	camera.lookat = Vector(5, 5, 2);
-	camera.up = Vector(0, 2, 0);
-	camera.right = Vector(-2, 0, 0);
-
-	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
+	camera.up = Vector(0, 3, 0);
+	camera.right = Vector(-3, 0, 0);
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
@@ -683,7 +658,7 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(6, 3, 6), 1, 1, 2, &glassMaterial);
+	ellipsoid = Ellipsoid(Vector(7, 2, 7), 2, 0.5f, 2, &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
@@ -708,38 +683,38 @@ Hit firstIntersect(Ray ray) {
 	return firstHit;
 }
 
-const int maxDepth = 10;
+const int maxDepth = 20;
 
 Color trace(Ray ray, int depth) {
 
-	Color outRadiance;
-
 	if (depth > maxDepth) {
-		return outRadiance;
+		return AMBIENT;
 	}
 
 	Hit hit = firstIntersect(ray);
 	if (hit.t < 0) {
-		return outRadiance;
+		return AMBIENT;
 	}
+
+	Color outRadiance;
 
 	Vector lightDir = (light.position - hit.position).norm();
 
-	Ray shadowRay = Ray(hit.position + hit.normal * epsilon, lightDir);
+	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir);
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
-		//lightDist = (hit.position - light.position).Length();
-		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir, light.color); //nem jooo
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir, light.getLuminance(hit.position));
 	}
 
 	if (hit.material->isReflective()) {
 		Vector reflectionDir = hit.material->reflect(ray.direction, hit.normal);
-		Ray reflectedRay(hit.position + hit.normal * epsilon, reflectionDir);
+		Ray reflectedRay(hit.position + hit.normal * EPSILON, reflectionDir);
 		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * hit.material->Fresnel(ray.direction, hit.normal);
 	}
+
 	if (hit.material->isRefractive()) {
 		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
-		Ray refractedRay(hit.position - hit.normal * epsilon, reflectionDir);
+		Ray refractedRay(hit.position - hit.normal * EPSILON, reflectionDir);
 		outRadiance = outRadiance + trace(refractedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
 	}
 
