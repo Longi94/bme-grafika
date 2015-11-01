@@ -162,20 +162,20 @@ public:
 	}
 
 	/*Vector refract(Vector& direction, Vector& normal) {
-	Color ior = n;
+		float ior = n;
 
-	float cosalpha = -(normal * direction);
-	if (cosalpha < 0) {
-	cosalpha = -cosalpha;
-	normal = normal * (-1);
-	ior = 1.0 / n;
-	}
+		float cosalpha = -(normal * direction);
+		if (cosalpha < 0) {
+			cosalpha = -cosalpha;
+			normal = normal * (-1);
+			ior = 1.0 / n;
+		}
 
-	float disc = 1 - (1 - powf(cosalpha, 2)) / powf(ior, 2);
-	if (disc < 0) {
-	return reflect(direction, normal);
-	}
-	return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
+		float disc = 1 - (1 - powf(cosalpha, 2)) / powf(ior, 2);
+		if (disc < 0) {
+			return reflect(direction, normal);
+		}
+		return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
 	}*/
 
 	Color shade(Vector& position, Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
@@ -251,9 +251,9 @@ public:
 
 //Gooooolden
 class GoldMaterial : public Material {
-	Color k = Color(3.1f, 2.7f, 1.9f);
 public:
 	GoldMaterial() {
+		Color k = Color(3.1f, 2.7f, 1.9f);
 		this->n = Color(0.17f, 0.35f, 1.5f);
 		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
 	}
@@ -274,9 +274,9 @@ public:
 };
 
 class GlassMaterial : public Material {
-	Color k = Color(0, 0, 0);
 public:
 	GlassMaterial() {
+		Color k = Color(0, 0, 0);
 		this->n = Color(1.5, 1.5, 1.5);
 		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
 	}
@@ -347,7 +347,7 @@ public:
 
 	Color getDiffuseColor(Vector& position) {
 
-		if (fmodf(position.x, squareSize * 2) > squareSize == fmodf(position.z, squareSize * 2) > squareSize) {
+		if ((fmodf(position.x, squareSize * 2) > squareSize) == (fmodf(position.z, squareSize * 2) > squareSize)) {
 			return c2;
 		}
 		else {
@@ -483,7 +483,6 @@ protected:
 	float A, B, C, D, E, F, G, H, I, J;
 public:
 
-
 	Hit intersect(Ray& ray) {
 		float Aq = A * powf(ray.direction.x, 2) + B * powf(ray.direction.y, 2) + C * powf(ray.direction.z, 2) +
 			D * ray.direction.x * ray.direction.y +
@@ -601,7 +600,7 @@ struct Camera {
 	Ray getRay(float x, float y) {
 		Vector pixel = lookat + right * (2 * x / XM - 1) + up * (2 * y / YM - 1);
 		Vector direction = pixel - eye;
-		return Ray(eye, direction.norm());
+		return Ray(eye, direction);
 	}
 };
 
@@ -611,7 +610,6 @@ Camera camera;
 Intersectable* objects[7];
 
 Plane wallLeft;
-Plane wallRight;
 Plane wallFront;
 Plane wallBack;
 Plane wallTop;
@@ -644,7 +642,6 @@ void build() {
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &wallRightMaterial);
-	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &goldMaterial);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wallFrontMaterial);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &goldMaterial);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &wallTopMaterial);
@@ -671,7 +668,8 @@ void build() {
 Hit firstIntersect(Ray ray) {
 	Hit firstHit;
 
-	for (Intersectable* obj : objects) {
+	for (int i = 0; i < 7; i++) {
+		Intersectable* obj = objects[i];
 		if (obj != 0) {
 			Hit hit = obj->intersect(ray);
 
@@ -699,13 +697,13 @@ Color trace(Ray ray, int depth) {
 		return outRadiance;
 	}
 
-	Vector lightDir = light.position - hit.position;
+	Vector lightDir = (light.position - hit.position).norm();
 
 	Ray shadowRay = Ray(hit.position + hit.normal * epsilon, lightDir);
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
 		//lightDist = (hit.position - light.position).Length();
-		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction.norm(), lightDir.norm(), light.color); //nem jooo
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir, light.color); //nem jooo
 	}
 
 	if (hit.material->isReflective()) {
