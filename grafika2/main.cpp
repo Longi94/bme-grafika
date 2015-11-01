@@ -478,33 +478,11 @@ public:
 	}
 };
 
-//Ellipsoid
-class Ellipsoid : public Intersectable {
-	Vector center;
-	float a, b, c;
-
+class QuadricSurfaces : public Intersectable {
+protected:
 	float A, B, C, D, E, F, G, H, I, J;
 public:
-	Ellipsoid() {
 
-	}
-
-	Ellipsoid(Vector center, float a, float b, float c, Material* material) {
-		this->center = center;
-		this->a = a;
-		this->b = b;
-		this->c = c;
-		this->material = material;
-
-		A = b*b*c*c;
-		B = a*a*c*c;
-		C = a*a*b*b;
-		D = E = F = 0;
-		G = -2 * center.x * A;
-		H = -2 * center.y * B;
-		I = -2 * center.z * C;
-		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*c*c;
-	}
 
 	Hit intersect(Ray& ray) {
 		float Aq = A * powf(ray.direction.x, 2) + B * powf(ray.direction.y, 2) + C * powf(ray.direction.z, 2) +
@@ -521,7 +499,7 @@ public:
 		float Cq = A * powf(ray.position.x, 2) + B * powf(ray.position.y, 2) + C * powf(ray.position.z, 2) +
 			D * ray.position.x * ray.position.y +
 			E * ray.position.x * ray.position.z +
-			F * ray.position.y * ray.position.z + 
+			F * ray.position.y * ray.position.z +
 			G * ray.position.x + H * ray.position.y + I * ray.position.z + J;
 
 		float disc = Bq * Bq - 4 * Aq * Cq;
@@ -558,12 +536,49 @@ public:
 	}
 };
 
-//Paraboloid
-class Paraboloid : public Intersectable {
-	Vector point, normal, focus;
+//Ellipsoid
+class Ellipsoid : public QuadricSurfaces {
+	Vector center;
+	float a, b, c;
+
 public:
-	Hit intersect(Ray& ray) {
-		// TODO
+	Ellipsoid() {
+
+	}
+
+	Ellipsoid(Vector center, float a, float b, float c, Material* material) {
+		this->center = center;
+		this->a = a;
+		this->b = b;
+		this->c = c;
+		this->material = material;
+
+		A = b*b*c*c;
+		B = a*a*c*c;
+		C = a*a*b*b;
+		D = E = F = 0;
+		G = -2 * center.x * A;
+		H = -2 * center.y * B;
+		I = -2 * center.z * C;
+		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*c*c;
+	}
+};
+
+//Paraboloid
+class Paraboloid : public QuadricSurfaces {
+public:
+	Paraboloid() {
+
+	}
+	Paraboloid(Vector center, float a, Material* material) {
+		this->material = material;
+		A = D = E = F = 0;
+		B = C = 1;
+
+		G = a*a;
+		H = -2 * center.y;
+		I = -2 * center.z;
+		J = -a*a*center.x + center.y*center.y + center.z*center.z;
 	}
 };
 
@@ -586,7 +601,7 @@ struct Camera {
 	Ray getRay(float x, float y) {
 		Vector pixel = lookat + right * (2 * x / XM - 1) + up * (2 * y / YM - 1);
 		Vector direction = pixel - eye;
-		return Ray(eye, direction);
+		return Ray(eye, direction.norm());
 	}
 };
 
@@ -603,6 +618,7 @@ Plane wallTop;
 Plane wallBottom;
 
 Ellipsoid ellipsoid;
+Paraboloid paraboloid;
 
 RoughMaterial roughYellow;
 
@@ -634,15 +650,17 @@ void build() {
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &wallTopMaterial);
 	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
 
+	paraboloid = Paraboloid(Vector(1, 5, 5), sqrtf(50), &goldMaterial);
+
 	objects[0] = &wallLeft;
-	objects[1] = &wallRight;
+	objects[1] = &paraboloid;
 	objects[2] = &wallFront;
 	objects[3] = &wallBack;
 	objects[4] = &wallTop;
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(4, 3, 6), 1, 1, 2, &goldMaterial);
+	ellipsoid = Ellipsoid(Vector(6, 3, 6), 1, 1, 2, &goldMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
