@@ -129,10 +129,6 @@ const float epsilon = 0.0001f;
 struct Ray {
 	Vector position, direction; //Kindulasi hely es iranya
 
-	Ray() {
-
-	}
-
 	Ray(Vector position, Vector direction) {
 		this->position = position;
 		this->direction = direction.norm();
@@ -144,7 +140,7 @@ class Material {
 protected:
 	//Smooth
 	Color F0; //Fresnel, anyagra jellemzo const: ((n-1)*(n-1) + k*k) / ((n+1)*(n+1) + k*k)
-	Color n; //toresmutato
+	Color N; //toresmutato
 
 	float shininess; //fenyesseg
 public:
@@ -158,10 +154,7 @@ public:
 	}
 
 	Vector refract(Vector& direction, Vector& normal) {
-		return Vector();
-	}
-
-	/*Vector refract(Vector& direction, Vector& normal) {
+		float n = (N.r + N.g + N.b) / 3.0f;
 		float ior = n;
 
 		float cosalpha = -(normal * direction);
@@ -176,7 +169,7 @@ public:
 			return reflect(direction, normal);
 		}
 		return direction / ior + normal * (cosalpha / ior - sqrtf(disc));
-	}*/
+	}
 
 	Color shade(Vector& position, Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
 		Color radOut;
@@ -254,8 +247,8 @@ class GoldMaterial : public Material {
 public:
 	GoldMaterial() {
 		Color k = Color(3.1f, 2.7f, 1.9f);
-		this->n = Color(0.17f, 0.35f, 1.5f);
-		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
+		this->N = Color(0.17f, 0.35f, 1.5f);
+		this->F0 = (N - Color(1, 1, 1) * (N - Color(1, 1, 1)) + k*k) / ((N + Color(1, 1, 1))*(N + Color(1, 1, 1)) + k*k);
 	}
 
 	bool isReflective() {
@@ -277,8 +270,8 @@ class GlassMaterial : public Material {
 public:
 	GlassMaterial() {
 		Color k = Color(0, 0, 0);
-		this->n = Color(1.5, 1.5, 1.5);
-		this->F0 = (n - Color(1, 1, 1) * (n - Color(1, 1, 1)) + k*k) / ((n + Color(1, 1, 1))*(n + Color(1, 1, 1)) + k*k);
+		this->N = Color(1.5, 1.5, 1.5);
+		this->F0 = (N - Color(1, 1, 1) * (N - Color(1, 1, 1)) + k*k) / ((N + Color(1, 1, 1))*(N + Color(1, 1, 1)) + k*k);
 	}
 
 	bool isReflective() {
@@ -289,7 +282,7 @@ public:
 	}
 
 	Color getDiffuseColor(Vector& position) {
-		return Color(1, 1, 1); //gold
+		return Color();
 	}
 	Color getShineColor(Vector& position) {
 		return Color();
@@ -427,6 +420,38 @@ public:
 	}
 };
 
+class CheckersDiagonal : public Material {
+	Color c1, c2;
+public:
+	CheckersDiagonal(Color c1, Color c2) {
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	bool isReflective() {
+		return false;
+	}
+	bool isRefractive() {
+		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		float x = position.x * 3;
+		float y = position.y * 3;
+
+		float n = sin(x) - cos(y);
+
+		if (n > 0) {
+			return c1;
+		}
+		else {
+			return c2;
+		}
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
+	}
+};
+
 //Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
@@ -478,7 +503,7 @@ public:
 	}
 };
 
-class QuadricSurfaces : public Intersectable {
+class QuadricSurface : public Intersectable {
 protected:
 	float A, B, C, D, E, F, G, H, I, J;
 public:
@@ -536,7 +561,7 @@ public:
 };
 
 //Ellipsoid
-class Ellipsoid : public QuadricSurfaces {
+class Ellipsoid : public QuadricSurface {
 	Vector center;
 	float a, b, c;
 
@@ -564,7 +589,7 @@ public:
 };
 
 //Paraboloid
-class Paraboloid : public QuadricSurfaces {
+class Paraboloid : public QuadricSurface {
 public:
 	Paraboloid() {
 
@@ -620,10 +645,11 @@ Paraboloid paraboloid;
 
 RoughMaterial roughYellow;
 
-ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
-Checkers wallTopMaterial(1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
-Wonky wallFrontMaterial(Vector(5, 5, 10), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
-Blobs wallRightMaterial(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+ConcentricCircles concetricCircles(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Checkers checkers(1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+CheckersDiagonal checkersDiagonal(Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Wonky wonky(Vector(5, 5, 10), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Blobs blobs(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 
 GoldMaterial goldMaterial;
 GlassMaterial glassMaterial;
@@ -633,7 +659,7 @@ LightSource light;
 void build() {
 	//camera init
 	camera = Camera();
-	camera.eye = Vector(5, 5, 0.1f);
+	camera.eye = Vector(5, 5, 0.001f);
 	camera.lookat = Vector(5, 5, 2);
 	camera.up = Vector(0, 2, 0);
 	camera.right = Vector(-2, 0, 0);
@@ -641,13 +667,13 @@ void build() {
 	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
 
 	//flat walls init
-	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &wallRightMaterial);
-	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wallFrontMaterial);
-	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &goldMaterial);
-	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &wallTopMaterial);
-	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
+	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
+	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wonky);
+	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &checkersDiagonal);
+	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &checkers);
+	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &concetricCircles);
 
-	paraboloid = Paraboloid(Vector(1, 5, 5), sqrtf(50), &goldMaterial);
+	paraboloid = Paraboloid(Vector(2, 5, 5), sqrtf(25), &goldMaterial);
 
 	objects[0] = &wallLeft;
 	objects[1] = &paraboloid;
@@ -657,7 +683,7 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(6, 3, 6), 1, 1, 2, &goldMaterial);
+	ellipsoid = Ellipsoid(Vector(6, 3, 6), 1, 1, 2, &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
