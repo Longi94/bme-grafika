@@ -123,6 +123,7 @@ struct Color {
 };
 
 const float c = 1.0f;
+const float epsilon = 0.0001f;
 
 //Kibaszott sugar
 struct Ray {
@@ -134,7 +135,7 @@ struct Ray {
 
 	Ray(Vector position, Vector direction) {
 		this->position = position;
-		this->direction = direction;
+		this->direction = direction.norm();
 	}
 };
 
@@ -444,7 +445,7 @@ public:
 
 	Plane(Vector position, Vector normal, Material* material) {
 		this->position = position;
-		this->normal = normal;
+		this->normal = normal.norm();
 		this->material = material;
 	}
 
@@ -682,21 +683,21 @@ Color trace(Ray ray, int depth) {
 
 	Vector lightDir = light.position - hit.position;
 
-	Ray shadowRay = Ray(hit.position, lightDir);
+	Ray shadowRay = Ray(hit.position + hit.normal * epsilon, lightDir);
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
 		//lightDist = (hit.position - light.position).Length();
-		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.color); //nem jooo
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction.norm(), lightDir.norm(), light.color); //nem jooo
 	}
 
 	if (hit.material->isReflective()) {
 		Vector reflectionDir = hit.material->reflect(ray.direction, hit.normal);
-		Ray reflectedRay(hit.position, reflectionDir);
+		Ray reflectedRay(hit.position + hit.normal * epsilon, reflectionDir);
 		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * hit.material->Fresnel(ray.direction, hit.normal);
 	}
 	if (hit.material->isRefractive()) {
 		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
-		Ray refractedRay(hit.position, reflectionDir);
+		Ray refractedRay(hit.position - hit.normal * epsilon, reflectionDir);
 		outRadiance = outRadiance + trace(refractedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
 	}
 
