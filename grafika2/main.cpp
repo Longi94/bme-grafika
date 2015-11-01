@@ -349,6 +349,74 @@ public:
 	}
 };
 
+class Wonky : public Material {
+	Vector center;
+	Color c1, c2;
+public:
+	Wonky(Vector center, Color c1, Color c2) {
+		this->center = center;
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	bool isReflective() {
+		return false;
+	}
+	bool isRefractive() {
+		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		float x = (position.x - center.x) * 1.5f;
+		float y = (position.y - center.y) * 1.5f;
+
+		float n = sinf(x + y) + sinf(x * y) - fabsf(sinf(x * x + y * y));
+
+		if (n > 0) {
+			return c1;
+		}
+		else {
+			return c2;
+		}
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
+	}
+};
+
+class Blobs : public Material {
+	Vector center;
+	Color c1, c2;
+public:
+	Blobs(Vector center, Color c1, Color c2) {
+		this->center = center;
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	bool isReflective() {
+		return false;
+	}
+	bool isRefractive() {
+		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+		float x = (position.z - center.z) * 3;
+		float y = (position.y - center.y) * 3;
+
+		float n = sinf(sinf(x) + cosf(y)) - cosf(sinf(x * y) + cosf(x));
+
+		if (n > 0) {
+			return c1;
+		}
+		else {
+			return c2;
+		}
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
+	}
+};
+
 //Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
@@ -453,13 +521,13 @@ Plane wallBack;
 Plane wallTop;
 Plane wallBottom;
 
-RoughMaterial roughRed;
-RoughMaterial roughBlue;
 RoughMaterial roughYellow;
 RoughMaterial roughCyan;
 RoughMaterial roughMagenta;
 
-ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(1, 0, 0), Color(1, 1, 1));
+ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Wonky wallFrontMaterial(Vector(5, 5, 10), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Blobs wallRightMaterial(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 
 GoldMaterial goldMaterial;
 
@@ -473,16 +541,14 @@ void build() {
 	camera.up = Vector(0, 2, 0);
 	camera.right = Vector(-2, 0, 0);
 
-	roughRed = RoughMaterial(Color(1, 0, 0), Color(1, 0, 0), 0);
-	roughBlue = RoughMaterial(Color(0, 0, 1), Color(1, 0, 0), 0);
 	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
 	roughCyan = RoughMaterial(Color(0, 1, 1), Color(1, 0, 0), 0);
 	roughMagenta = RoughMaterial(Color(1, 0, 1), Color(1, 0, 0), 0);
 
 	//flat walls init
-	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &roughRed);
+	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &wallRightMaterial);
 	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &goldMaterial);
-	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &roughBlue);
+	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wallFrontMaterial);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &roughCyan);
 	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
