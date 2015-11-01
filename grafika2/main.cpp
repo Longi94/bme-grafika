@@ -477,6 +477,7 @@ public:
 	}
 };
 
+//http://www.bmsc.washington.edu/people/merritt/graphics/quadrics.html
 class QuadricSurface : public Intersectable {
 protected:
 	float A, B, C, D, E, F, G, H, I, J;
@@ -587,7 +588,7 @@ struct LightSource {
 
 	Color getLuminance(Vector& position) {
 		float d = (this->position - position).Length();
-		return color / powf(d, 2) * 30;
+		return color / powf(d, 2) * 20;
 	}
 };
 
@@ -636,10 +637,10 @@ LightSource light;
 void build() {
 	//camera init
 	camera = Camera();
-	camera.eye = Vector(5, 5, 0.001f);
-	camera.lookat = Vector(5, 5, 2);
-	camera.up = Vector(0, 3, 0);
-	camera.right = Vector(-3, 0, 0);
+	camera.eye = Vector(8, 1, 0.5f);
+	camera.lookat = Vector(7.154f, 2, 2);
+	camera.up = Vector(0.75f, 2.6f, -1.3f);
+	camera.right = Vector(-2.6f, 0, -1.5f);
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
@@ -658,12 +659,12 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(7, 2, 7), 2, 0.5f, 2, &glassMaterial);
+	ellipsoid = Ellipsoid(Vector(7, 3, 7), 1, 2, 0.5f, &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
 	light.color = Color(1, 1, 1);
-	light.position = Vector(5, 5, 5);
+	light.position = Vector(7, 7, 5);
 }
 
 Hit firstIntersect(Ray ray) {
