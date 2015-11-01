@@ -217,27 +217,6 @@ struct Hit {
 	}
 };
 
-//Sima felulet, a sugar siman visszaverodik es/vagy torik
-class SmoothMaterial : public Material {
-	Color kd, ks;
-public:
-	bool isReflective() {
-		return true;
-	}
-
-	bool isRefractive() {
-		return true;
-	}
-
-	Color getDiffuseColor(Vector& position) {
-		return kd;
-	}
-
-	Color getShineColor(Vector& position) {
-		return ks;
-	}
-};
-
 //Rucskos anyag, a sugar szetverodik ezen, innen jon a szin
 class RoughMaterial : public Material {
 	Color kd, ks;
@@ -500,10 +479,81 @@ public:
 
 //Ellipsoid
 class Ellipsoid : public Intersectable {
+	Vector center;
+	float a, b, c;
 
+	float A, B, C, D, E, F, G, H, I, J;
 public:
+	Ellipsoid() {
+
+	}
+
+	Ellipsoid(Vector center, float a, float b, float c, Material* material) {
+		this->center = center;
+		this->a = a;
+		this->b = b;
+		this->c = c;
+		this->material = material;
+
+		A = b*b*c*c;
+		B = a*a*c*c;
+		C = a*a*b*b;
+		D = E = F = 0;
+		G = -2 * center.x * A;
+		H = -2 * center.y * B;
+		I = -2 * center.z * C;
+		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*c*c;
+	}
+
 	Hit intersect(Ray& ray) {
-		// TODO
+		float Aq = A * powf(ray.direction.x, 2) + B * powf(ray.direction.y, 2) + C * powf(ray.direction.z, 2) +
+			D * ray.direction.x * ray.direction.y +
+			E * ray.direction.x * ray.direction.z +
+			F * ray.direction.y * ray.direction.z;
+
+		float Bq = 2 * A * ray.position.x * ray.direction.x + 2 * B * ray.position.y * ray.direction.y + 2 * C * ray.position.z * ray.direction.z +
+			D * (ray.position.x * ray.direction.y + ray.position.y * ray.direction.x) +
+			E * (ray.position.x * ray.direction.z + ray.position.z * ray.direction.x) +
+			F * (ray.position.y * ray.direction.z + ray.position.z * ray.direction.y) +
+			G * ray.direction.x + H * ray.direction.y + I * ray.direction.z;
+
+		float Cq = A * powf(ray.position.x, 2) + B * powf(ray.position.y, 2) + C * powf(ray.position.z, 2) +
+			D * ray.position.x * ray.position.y +
+			E * ray.position.x * ray.position.z +
+			F * ray.position.y * ray.position.z + 
+			G * ray.position.x + H * ray.position.y + I * ray.position.z + J;
+
+		float disc = Bq * Bq - 4 * Aq * Cq;
+		if (disc < 0) {
+			return Hit();
+		}
+
+		float t = (-Bq - sqrtf(disc)) / (2 * Aq);
+
+		if (t < 0) {
+			t = (-Bq + sqrtf(disc)) / (2 * Aq);
+		}
+
+		if (Aq == 0) {
+			t = -Cq / Bq;
+		}
+
+		Vector intersection = ray.position + ray.direction.norm() * t;
+		Vector normal = Vector(2 * A * intersection.x + D * intersection.y + E * intersection.z + G,
+			2 * B * intersection.y + D * intersection.x + F * intersection.z + H,
+			2 * C * intersection.z + E * intersection.x + F * intersection.y + I).norm();
+
+		if (normal * ray.direction > 0) {
+			normal = Vector(-normal.x, -normal.y, -normal.z);
+		}
+
+		Hit hit;
+		hit.normal = normal;
+		hit.position = intersection;
+		hit.t = t;
+		hit.material = material;
+
+		return hit;
 	}
 };
 
@@ -551,6 +601,8 @@ Plane wallBack;
 Plane wallTop;
 Plane wallBottom;
 
+Ellipsoid ellipsoid;
+
 RoughMaterial roughYellow;
 
 ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
@@ -559,6 +611,7 @@ Wonky wallFrontMaterial(Vector(5, 5, 10), Color(0.32f, 0.18f, 0.66f), Color(1, 1
 Blobs wallRightMaterial(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 
 GoldMaterial goldMaterial;
+GlassMaterial glassMaterial;
 
 LightSource light;
 
@@ -576,7 +629,7 @@ void build() {
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &wallRightMaterial);
 	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &goldMaterial);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wallFrontMaterial);
-	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
+	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &goldMaterial);
 	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &wallTopMaterial);
 	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
 
@@ -586,6 +639,10 @@ void build() {
 	objects[3] = &wallBack;
 	objects[4] = &wallTop;
 	objects[5] = &wallBottom;
+
+	//Init ellipsoid
+	ellipsoid = Ellipsoid(Vector(4, 3, 6), 1, 1, 2, &goldMaterial);
+	objects[6] = &ellipsoid;
 
 	//light init
 	light.color = Color(1, 1, 1);
