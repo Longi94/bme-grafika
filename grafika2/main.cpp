@@ -349,6 +349,36 @@ public:
 	}
 };
 
+class Checkers : public Material {
+	float squareSize;
+	Color c1, c2;
+public:
+	Checkers(float bandWidth, Color c1, Color c2) {
+		this->squareSize = bandWidth;
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	bool isReflective() {
+		return false;
+	}
+	bool isRefractive() {
+		return false;
+	}
+
+	Color getDiffuseColor(Vector& position) {
+
+		if (fmodf(position.x, squareSize * 2) > squareSize == fmodf(position.z, squareSize * 2) > squareSize) {
+			return c2;
+		}
+		else {
+			return c1;
+		}
+	}
+	Color getShineColor(Vector& position) {
+		return Color();
+	}
+};
+
 class Wonky : public Material {
 	Vector center;
 	Color c1, c2;
@@ -522,10 +552,9 @@ Plane wallTop;
 Plane wallBottom;
 
 RoughMaterial roughYellow;
-RoughMaterial roughCyan;
-RoughMaterial roughMagenta;
 
 ConcentricCircles wallBottomMaterial(Vector(5, 0, 5), 1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
+Checkers wallTopMaterial(1.0f, Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 Wonky wallFrontMaterial(Vector(5, 5, 10), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 Blobs wallRightMaterial(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 
@@ -542,15 +571,13 @@ void build() {
 	camera.right = Vector(-2, 0, 0);
 
 	roughYellow = RoughMaterial(Color(1, 1, 0), Color(1, 0, 0), 0);
-	roughCyan = RoughMaterial(Color(0, 1, 1), Color(1, 0, 0), 0);
-	roughMagenta = RoughMaterial(Color(1, 0, 1), Color(1, 0, 0), 0);
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &wallRightMaterial);
 	wallRight = Plane(Vector(0, 0, 0), Vector(1, 0, 0), &goldMaterial);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wallFrontMaterial);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &roughYellow);
-	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &roughCyan);
+	wallTop = Plane(Vector(10, 10, 10), Vector(0, -1, 0), &wallTopMaterial);
 	wallBottom = Plane(Vector(0, 0, 0), Vector(0, 1, 0), &wallBottomMaterial);
 
 	objects[0] = &wallLeft;
