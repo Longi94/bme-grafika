@@ -66,6 +66,8 @@
 const float c = 1.0f;
 const float EPSILON = 0.0001f;
 
+struct Matrix;
+
 struct Vector {
 	float x, y, z;
 
@@ -97,6 +99,15 @@ struct Vector {
 	Vector norm() {
 		return Vector(x / Length(), y / Length(), z / Length());
 	}
+};
+
+const Vector ELLIPSOID_START_POS(8, 3, 7.5f);
+const Vector ELLIPSOID_SPEED(0.408248f, -0.408248f, 0.408248f);
+const Vector LIGHT_SOURCE_START_POS();
+const Vector LIGHT_SOURCE_SPEED();
+
+struct Matrix {
+	float mtx[3][3];
 };
 
 struct Color {
@@ -560,6 +571,26 @@ public:
 		H = -2 * center.y * B;
 		I = -2 * center.z * C;
 		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*c*c;
+
+		/*float Xc = center.x;
+		float Yc = center.y;
+		float Zc = center.z;
+
+		float P = 1 / (2 * a*a) + 1 / (2 * c*c);
+		float Q = 1 / (sqrtf(2)*a*a) - 1 / (sqrtf(2)*c*c);
+		float R = 1 / (4 * a*a) - 1 / (2 * b*b) + 1 / (4 * c*c);
+		float S = 1 / (4 * a*a) + 1 / (2 * b*b) + 1 / (4 * c*c);
+
+		A = P;
+		B = S;
+		C = S;
+		D = Q;
+		E = Q;
+		F = 2*R;
+		G = -2 * Xc*P - Yc*Q - Zc*Q;
+		H = -2 * Yc*S - Xc*Q - 2 * Zc*R;
+		H = -2 * Zc*S - Xc*Q - 2 * Yc*R;
+		J = Xc*Xc*P + Yc*Yc*S + Zc*Zc*S + Xc*Yc*Q + Yc*Zc*Q + Xc*Zc*Q - 1;*/
 	}
 };
 
@@ -659,7 +690,7 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(7, 3, 7), 1, 2, 0.5f, &glassMaterial);
+	ellipsoid = Ellipsoid(ELLIPSOID_START_POS, 1, 2, 0.5f, &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
