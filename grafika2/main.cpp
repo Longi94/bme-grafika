@@ -590,7 +590,7 @@ public:
 		G = -2 * Xc*P - Yc*Q - Zc*Q;
 		H = -2 * Yc*S - Xc*Q - 2 * Zc*R;
 		H = -2 * Zc*S - Xc*Q - 2 * Yc*R;
-		J = Xc*Xc*P + Yc*Yc*S + Zc*Zc*S + Xc*Yc*Q + Yc*Zc*Q + Xc*Zc*Q - 1;*/
+		J = Xc*Xc*P + Yc*Yc*S + Zc*Zc*S + Xc*Yc*Q + Yc*Zc*R + Xc*Zc*Q - 1;*/
 	}
 };
 
