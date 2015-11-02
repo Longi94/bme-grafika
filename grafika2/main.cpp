@@ -548,50 +548,82 @@ public:
 
 //Ellipsoid
 class Ellipsoid : public QuadricSurface {
-	Vector center;
-	float a, b, c;
+	Vector center, i;
+	float a, b;
 
 public:
 	Ellipsoid() {
 
 	}
 
-	Ellipsoid(Vector center, float a, float b, float c, Material* material) {
+	Ellipsoid(Vector center, float a, float b, Vector i, Material* material) {
 		this->center = center;
 		this->a = a;
 		this->b = b;
-		this->c = c;
+		this->i = i;
 		this->material = material;
 
-		A = b*b*c*c;
-		B = a*a*c*c;
+		float f = sqrtf(a*a - b*b);
+
+		Vector F1 = center + i*f;
+		Vector F2 = center - i*f;
+
+		float x1 = F1.x;
+		float y1 = F1.y;
+		float z1 = F1.z;
+		float x2 = F2.x;
+		float y2 = F2.y;
+		float z2 = F2.z;
+
+		float F1LS = F1.Length() * F1.Length();
+		float F2LS = F2.Length() * F2.Length();
+
+		A = powf(x1 - x2, 2) - 4 * a*a;
+		B = powf(y1 - y2, 2) - 4 * a*a;
+		C = powf(z1 - z2, 2) - 4 * a*a;
+		D = 2 * (x1 - x2) * (y1 - y2);
+		E = 2 * (x1 - x2) * (z1 - z2);
+		F = 2 * (y1 - y2) * (z1 - z2);
+		G = 4 * a*a*(x1 + x2) + F1LS * (x2 - x1) + F2LS * (x1 - x2);
+		H = 4 * a*a*(y1 + y2) + F1LS * (y2 - y1) + F2LS * (y1 - y2);
+		I = 4 * a*a*(z1 + z2) + F1LS * (z2 - z1) + F2LS * (z1 - z2);
+		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * (2 - F1LS + F2LS - 2 * (x2*x2 +  y2*y2 +  z2*z2));
+
+		B /= A;
+		C /= A;
+		D /= A;
+		E /= A;
+		F /= A;
+		G /= A;
+		H /= A;
+		I /= A;
+		J /= A;
+		A /= A;
+		
+		std::cout << "A:" << A << " B:" << B << " C:" << C << " D:" << D << " E:" << E << " F:" << F << " G:" << G << " H:" << H << " I:" << I << " J:" << J << std::endl;
+
+		/*A = b*b*b*b;
+		B = a*a*b*b;
 		C = a*a*b*b;
 		D = E = F = 0;
 		G = -2 * center.x * A;
 		H = -2 * center.y * B;
 		I = -2 * center.z * C;
-		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*c*c;
+		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*b*b;
 
-		/*float Xc = center.x;
-		float Yc = center.y;
-		float Zc = center.z;
+		B /= A;
+		C /= A;
+		D /= A;
+		E /= A;
+		F /= A;
+		G /= A;
+		H /= A;
+		I /= A;
+		J /= A;
+		A /= A;
 
-		float P = 1 / (2 * a*a) + 1 / (2 * c*c);
-		float Q = 1 / (sqrtf(2)*a*a) - 1 / (sqrtf(2)*c*c);
-		float R = 1 / (4 * a*a) - 1 / (2 * b*b) + 1 / (4 * c*c);
-		float S = 1 / (4 * a*a) + 1 / (2 * b*b) + 1 / (4 * c*c);
-
-		A = P;
-		B = S;
-		C = S;
-		D = Q;
-		E = Q;
-		F = 2*R;
-		G = -2 * Xc*P - Yc*Q - Zc*Q;
-		H = -2 * Yc*S - Xc*Q - 2 * Zc*R;
-		H = -2 * Zc*S - Xc*Q - 2 * Yc*R;
-		J = Xc*Xc*P + Yc*Yc*S + Zc*Zc*S + Xc*Yc*Q + Yc*Zc*R + Xc*Zc*Q - 1;*/
-	}
+		std::cout << "A:" << A << " B:" << B << " C:" << C << " D:" << D << " E:" << E << " F:" << F << " G:" << G << " H:" << H << " I:" << I << " J:" << J << std::endl;
+	*/}
 };
 
 //Paraboloid
@@ -667,11 +699,18 @@ LightSource light;
 
 void build() {
 	//camera init
+	Vector up = Vector(0, 1, 0);
+
 	camera = Camera();
-	camera.eye = Vector(8, 1, 0.5f);
-	camera.lookat = Vector(7.154f, 2, 2);
-	camera.up = Vector(0.75f, 2.6f, -1.3f);
-	camera.right = Vector(-2.6f, 0, -1.5f);
+	camera.eye = Vector(9.5f, 1, 0.5f);
+	camera.lookat = Vector(5, 5, 5);
+
+	//magic
+	camera.lookat = ((camera.lookat - camera.eye).norm() * 2) + camera.eye;
+	camera.right = (camera.lookat - camera.eye) % up;
+	camera.right = camera.right.norm() * 2;
+	camera.up = camera.right % (camera.lookat - camera.eye);
+	camera.up = camera.up.norm() * 2;
 
 	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
@@ -690,7 +729,7 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(ELLIPSOID_START_POS, 1, 2, 0.5f, &glassMaterial);
+	ellipsoid = Ellipsoid(Vector(5, 3, 5), 1, 0.25f, Vector(-1, -1, -1).norm(), &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
@@ -730,12 +769,12 @@ Color trace(Ray ray, int depth) {
 
 	Color outRadiance;
 
-	Vector lightDir = (light.position - hit.position).norm();
+	Vector lightDir = light.position - hit.position;
 
-	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir);
+	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir.norm());
 	Hit shadowHit = firstIntersect(shadowRay);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
-		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir, light.getLuminance(hit.position));
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.getLuminance(hit.position));
 	}
 
 	if (hit.material->isReflective()) {
