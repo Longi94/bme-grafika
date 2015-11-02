@@ -244,7 +244,7 @@ public:
 	}
 
 	Color getDiffuseColor(Vector& position) {
-		return Color(1, 0.84f, 0); //gold
+		return Color(); //gold
 	}
 	Color getShineColor(Vector& position) {
 		return Color();
@@ -587,43 +587,21 @@ public:
 		G = 4 * a*a*(x1 + x2) + F1LS * (x2 - x1) + F2LS * (x1 - x2);
 		H = 4 * a*a*(y1 + y2) + F1LS * (y2 - y1) + F2LS * (y1 - y2);
 		I = 4 * a*a*(z1 + z2) + F1LS * (z2 - z1) + F2LS * (z1 - z2);
-		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * (2 - F1LS + F2LS - 2 * (x2*x2 +  y2*y2 +  z2*z2));
+		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * a * (2 * a*a - F1LS + F2LS - 2 * (x2*x2 +  y2*y2 +  z2*z2));
 
-		B /= A;
-		C /= A;
-		D /= A;
-		E /= A;
-		F /= A;
-		G /= A;
-		H /= A;
-		I /= A;
-		J /= A;
-		A /= A;
-		
-		std::cout << "A:" << A << " B:" << B << " C:" << C << " D:" << D << " E:" << E << " F:" << F << " G:" << G << " H:" << H << " I:" << I << " J:" << J << std::endl;
-
-		/*A = b*b*b*b;
-		B = a*a*b*b;
-		C = a*a*b*b;
-		D = E = F = 0;
-		G = -2 * center.x * A;
-		H = -2 * center.y * B;
-		I = -2 * center.z * C;
-		J = powf(center.x, 2) * A + powf(center.y, 2) * B + powf(center.z, 2) * C - a*a*b*b*b*b;
-
-		B /= A;
-		C /= A;
-		D /= A;
-		E /= A;
-		F /= A;
-		G /= A;
-		H /= A;
-		I /= A;
-		J /= A;
-		A /= A;
-
-		std::cout << "A:" << A << " B:" << B << " C:" << C << " D:" << D << " E:" << E << " F:" << F << " G:" << G << " H:" << H << " I:" << I << " J:" << J << std::endl;
-	*/}
+		if (A != 0) {
+			B /= A;
+			C /= A;
+			D /= A;
+			E /= A;
+			F /= A;
+			G /= A;
+			H /= A;
+			I /= A;
+			J /= A;
+			A /= A;
+		}
+	}
 };
 
 //Paraboloid
@@ -729,7 +707,7 @@ void build() {
 	objects[5] = &wallBottom;
 
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(5, 3, 5), 1, 0.25f, Vector(-1, -1, -1).norm(), &glassMaterial);
+	ellipsoid = Ellipsoid(Vector(5, 3, 5), 3, 1, Vector(-1, -1, -1).norm(), &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
