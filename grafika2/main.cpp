@@ -587,7 +587,7 @@ public:
 		G = 4 * a*a*(x1 + x2) + F1LS * (x2 - x1) + F2LS * (x1 - x2);
 		H = 4 * a*a*(y1 + y2) + F1LS * (y2 - y1) + F2LS * (y1 - y2);
 		I = 4 * a*a*(z1 + z2) + F1LS * (z2 - z1) + F2LS * (z1 - z2);
-		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * a * (2 * a*a - F1LS + F2LS - 2 * (x2*x2 +  y2*y2 +  z2*z2));
+		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * a * (2 * a*a - F1LS + F2LS - 2 * (x2*x2 + y2*y2 + z2*z2));
 
 		if (A != 0) {
 			B /= A;
@@ -675,7 +675,9 @@ GlassMaterial glassMaterial;
 
 LightSource light;
 
-void build() {
+int endTime = 10000;
+
+void init() {
 	//camera init
 	Vector up = Vector(0, 1, 0);
 
@@ -705,14 +707,6 @@ void build() {
 	objects[3] = &wallBack;
 	objects[4] = &wallTop;
 	objects[5] = &wallBottom;
-
-	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(5, 3, 5), 3, 1, Vector(-1, -1, -1).norm(), &glassMaterial);
-	objects[6] = &ellipsoid;
-
-	//light init
-	light.color = Color(1, 1, 1);
-	light.position = Vector(7, 7, 5);
 }
 
 Hit firstIntersect(Ray ray) {
@@ -770,16 +764,26 @@ Color trace(Ray ray, int depth) {
 	return outRadiance;
 }
 
-void onInitialization()
-{
-	glViewport(0, 0, Camera::XM, Camera::YM);
-	build();
+void build(int elapsedTime) {
+	//Init ellipsoid
+	ellipsoid = Ellipsoid(Vector(5, 3, 5), 3, 1, Vector(-1, -1, -1).norm(), &glassMaterial);
+	objects[6] = &ellipsoid;
+
+	//light init
+	light.color = Color(1, 1, 1);
+	light.position = Vector(7, 7, 5);
 
 	for (int Y = 0; Y < Camera::XM; Y++)
 		for (int X = 0; X < Camera::YM; X++) {
 			Ray ray = camera.getRay(X, Y);
 			image[Y*Camera::XM + X] = trace(ray, 0);
 		}
+}
+
+void onInitialization()
+{
+	glViewport(0, 0, Camera::XM, Camera::YM);
+	init();
 }
 
 void onDisplay()
@@ -795,7 +799,12 @@ void onDisplay()
 
 void onKeyboard(unsigned char key, int x, int y)
 {
+	if (key == ' ') {
+		//endTime = glutGet(GLUT_ELAPSED_TIME);
 
+		build(endTime);
+		glutPostRedisplay();
+	}
 }
 
 void onKeyboardUp(unsigned char key, int x, int y)
