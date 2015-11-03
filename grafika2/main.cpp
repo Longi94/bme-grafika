@@ -44,7 +44,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
-#include <iostream>
 
 #if defined(__APPLE__)                                                                                                                                                                                                            
 #include <OpenGL/gl.h>                                                                                                                                                                                                            
@@ -648,6 +647,13 @@ struct Camera {
 	}
 };
 
+Vector ELLIPSOID_START_POS(9, 1, 9);
+Vector ELLIPSOID_SPEED = Vector(-1, 1, -1).norm() * 0.5f;
+Vector LIGHT_SOURCE_START_POS(4, 7, 6);
+Vector LIGHT_SOURCE_SPEED = Vector(1, 0, -1).norm() * 0.1f;
+Vector CAMERA_POS(9.5f, 1, 0.5f);
+Vector CAMERA_LOOK_AT_THIS_POINT(5, 5, 5);
+
 Color image[Camera::XM*Camera::YM];
 
 Camera camera;
@@ -671,16 +677,7 @@ Blobs blobs(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 GoldMaterial goldMaterial;
 GlassMaterial glassMaterial;
 
-Vector ELLIPSOID_START_POS(9, 1, 9);
-Vector ELLIPSOID_SPEED = Vector(-1, 1, -1).norm() * 0.5f;
-Vector LIGHT_SOURCE_START_POS(4, 7, 6);
-Vector LIGHT_SOURCE_SPEED = Vector(1, 0, -1).norm() * 0.5f;
-Vector CAMERA_POS(9.5f, 1, 0.5f);
-Vector CAMERA_LOOK_AT_THIS_POINT(5, 5, 5);
-
 LightSource light;
-
-int endTime = 10000;
 
 void init() {
 	//camera init
@@ -757,10 +754,17 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 
 	float disc = Lb*Lb - 4 * La*Lc; //Nem kéne hogy negatív legyen
 
-	float t = (-Lb - sqrtf(disc)) / 2 * La;
+	float t;
+	if (fabsf(La) < EPSILON) {
+		t = -Lc / Lb;
+	}
+	else {
 
-	if (t > 0) {
-		t = (-Lb + sqrtf(disc)) / 2 * La;
+		t = (-Lb - sqrtf(disc)) / (2 * La);
+
+		if (t < 0) {
+			t = (-Lb + sqrtf(disc)) / (2 * La);
+		}
 	}
 
 	Vector lightOrigin = light.position + light.velocity * (hitTime - t); //Innen jött a fény
@@ -825,9 +829,8 @@ void onDisplay()
 void onKeyboard(unsigned char key, int x, int y)
 {
 	if (key == ' ') {
-		//endTime = glutGet(GLUT_ELAPSED_TIME);
-
-		build(endTime / 1000.0f);
+		int time = glutGet(GLUT_ELAPSED_TIME);
+		build(time / 1000.0f);
 		glutPostRedisplay();
 	}
 }
