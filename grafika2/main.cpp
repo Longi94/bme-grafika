@@ -573,10 +573,6 @@ public:
 			2 * B * intersection.y + D * intersection.x + F * intersection.z + H,
 			2 * C * intersection.z + E * intersection.x + F * intersection.y + I).norm();
 
-		if (normal * ray.direction > 0) {
-			normal = Vector(-normal.x, -normal.y, -normal.z);
-		}
-
 		Hit hit;
 		hit.normal = normal;
 		hit.position = intersection;
@@ -642,10 +638,6 @@ public:
 		Vector normal = Vector(2 * A * intersection.x + D * intersection.y + E * intersection.z + G,
 			2 * B * intersection.y + D * intersection.x + F * intersection.z + H,
 			2 * C * intersection.z + E * intersection.x + F * intersection.y + I).norm();
-
-		if (normal * ray.direction > 0) {
-			normal = Vector(-normal.x, -normal.y, -normal.z);
-		}
 
 		Hit hit;
 		hit.normal = normal;
