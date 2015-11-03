@@ -66,8 +66,6 @@
 const float c = 1.0f;
 const float EPSILON = 0.0001f;
 
-struct Matrix;
-
 struct Vector {
 	float x, y, z;
 
@@ -99,15 +97,6 @@ struct Vector {
 	Vector norm() {
 		return Vector(x / Length(), y / Length(), z / Length());
 	}
-};
-
-const Vector ELLIPSOID_START_POS(8, 3, 7.5f);
-const Vector ELLIPSOID_SPEED(0.408248f, -0.408248f, 0.408248f);
-const Vector LIGHT_SOURCE_START_POS();
-const Vector LIGHT_SOURCE_SPEED();
-
-struct Matrix {
-	float mtx[3][3];
 };
 
 struct Color {
@@ -442,7 +431,7 @@ class Intersectable {
 protected:
 	Material* material;
 public:
-	virtual Hit intersect(Ray& ray) = 0;
+	virtual Hit intersect(Ray& ray, float elapsedTime) = 0;
 };
 
 //Sik
@@ -459,7 +448,7 @@ public:
 		this->material = material;
 	}
 
-	Hit intersect(Ray& ray) {
+	Hit intersect(Ray& ray, float elapsedTime) {
 
 		float dot = normal * ray.direction;
 
@@ -489,12 +478,64 @@ public:
 };
 
 //http://www.bmsc.washington.edu/people/merritt/graphics/quadrics.html
-class QuadricSurface : public Intersectable {
-protected:
-	float A, B, C, D, E, F, G, H, I, J;
-public:
+class Ellipsoid : public Intersectable {
+	Vector center, i;
+	float a, b;
 
-	Hit intersect(Ray& ray) {
+public:
+	Ellipsoid() {
+
+	}
+
+	Ellipsoid(Vector center, float a, float b, Vector i, Material* material) {
+		this->center = center;
+		this->a = a;
+		this->b = b;
+		this->i = i;
+		this->material = material;
+	}
+
+	Hit intersect(Ray& ray, float elapsedTime) {
+
+		float f = sqrtf(a*a - b*b);
+
+		Vector F1 = center + i*f;
+		Vector F2 = center - i*f;
+
+		float x1 = F1.x;
+		float y1 = F1.y;
+		float z1 = F1.z;
+		float x2 = F2.x;
+		float y2 = F2.y;
+		float z2 = F2.z;
+
+		float F1LS = F1.Length() * F1.Length();
+		float F2LS = F2.Length() * F2.Length();
+
+		float A = powf(x1 - x2, 2) - 4 * a*a;
+		float B = powf(y1 - y2, 2) - 4 * a*a;
+		float C = powf(z1 - z2, 2) - 4 * a*a;
+		float D = 2 * (x1 - x2) * (y1 - y2);
+		float E = 2 * (x1 - x2) * (z1 - z2);
+		float F = 2 * (y1 - y2) * (z1 - z2);
+		float G = 4 * a*a*(x1 + x2) + F1LS * (x2 - x1) + F2LS * (x1 - x2);
+		float H = 4 * a*a*(y1 + y2) + F1LS * (y2 - y1) + F2LS * (y1 - y2);
+		float I = 4 * a*a*(z1 + z2) + F1LS * (z2 - z1) + F2LS * (z1 - z2);
+		float J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * a * (2 * a*a - F1LS + F2LS - 2 * (x2*x2 + y2*y2 + z2*z2));
+
+		if (A != 0) {
+			B /= A;
+			C /= A;
+			D /= A;
+			E /= A;
+			F /= A;
+			G /= A;
+			H /= A;
+			I /= A;
+			J /= A;
+			A /= A;
+		}
+
 		float Aq = A * powf(ray.direction.x, 2) + B * powf(ray.direction.y, 2) + C * powf(ray.direction.z, 2) +
 			D * ray.direction.x * ray.direction.y +
 			E * ray.direction.x * ray.direction.z +
@@ -546,66 +587,9 @@ public:
 	}
 };
 
-//Ellipsoid
-class Ellipsoid : public QuadricSurface {
-	Vector center, i;
-	float a, b;
-
-public:
-	Ellipsoid() {
-
-	}
-
-	Ellipsoid(Vector center, float a, float b, Vector i, Material* material) {
-		this->center = center;
-		this->a = a;
-		this->b = b;
-		this->i = i;
-		this->material = material;
-
-		float f = sqrtf(a*a - b*b);
-
-		Vector F1 = center + i*f;
-		Vector F2 = center - i*f;
-
-		float x1 = F1.x;
-		float y1 = F1.y;
-		float z1 = F1.z;
-		float x2 = F2.x;
-		float y2 = F2.y;
-		float z2 = F2.z;
-
-		float F1LS = F1.Length() * F1.Length();
-		float F2LS = F2.Length() * F2.Length();
-
-		A = powf(x1 - x2, 2) - 4 * a*a;
-		B = powf(y1 - y2, 2) - 4 * a*a;
-		C = powf(z1 - z2, 2) - 4 * a*a;
-		D = 2 * (x1 - x2) * (y1 - y2);
-		E = 2 * (x1 - x2) * (z1 - z2);
-		F = 2 * (y1 - y2) * (z1 - z2);
-		G = 4 * a*a*(x1 + x2) + F1LS * (x2 - x1) + F2LS * (x1 - x2);
-		H = 4 * a*a*(y1 + y2) + F1LS * (y2 - y1) + F2LS * (y1 - y2);
-		I = 4 * a*a*(z1 + z2) + F1LS * (z2 - z1) + F2LS * (z1 - z2);
-		J = (powf(F1LS - F2LS, 2) / 4.0f) + 2 * a * a * (2 * a*a - F1LS + F2LS - 2 * (x2*x2 + y2*y2 + z2*z2));
-
-		if (A != 0) {
-			B /= A;
-			C /= A;
-			D /= A;
-			E /= A;
-			F /= A;
-			G /= A;
-			H /= A;
-			I /= A;
-			J /= A;
-			A /= A;
-		}
-	}
-};
-
-//Paraboloid
-class Paraboloid : public QuadricSurface {
+//http://www.bmsc.washington.edu/people/merritt/graphics/quadrics.html
+class Paraboloid : public Intersectable {
+	float A, B, C, D, E, F, G, H, I, J;
 public:
 	Paraboloid() {
 
@@ -620,16 +604,72 @@ public:
 		I = -2 * center.z;
 		J = -a*a*center.x + center.y*center.y + center.z*center.z;
 	}
+
+	Hit intersect(Ray& ray, float elapsedTime) {
+		float Aq = A * powf(ray.direction.x, 2) + B * powf(ray.direction.y, 2) + C * powf(ray.direction.z, 2) +
+			D * ray.direction.x * ray.direction.y +
+			E * ray.direction.x * ray.direction.z +
+			F * ray.direction.y * ray.direction.z;
+
+		float Bq = 2 * A * ray.position.x * ray.direction.x + 2 * B * ray.position.y * ray.direction.y + 2 * C * ray.position.z * ray.direction.z +
+			D * (ray.position.x * ray.direction.y + ray.position.y * ray.direction.x) +
+			E * (ray.position.x * ray.direction.z + ray.position.z * ray.direction.x) +
+			F * (ray.position.y * ray.direction.z + ray.position.z * ray.direction.y) +
+			G * ray.direction.x + H * ray.direction.y + I * ray.direction.z;
+
+		float Cq = A * powf(ray.position.x, 2) + B * powf(ray.position.y, 2) + C * powf(ray.position.z, 2) +
+			D * ray.position.x * ray.position.y +
+			E * ray.position.x * ray.position.z +
+			F * ray.position.y * ray.position.z +
+			G * ray.position.x + H * ray.position.y + I * ray.position.z + J;
+
+		float disc = Bq * Bq - 4 * Aq * Cq;
+		if (disc < 0) {
+			return Hit();
+		}
+
+		float t = (-Bq - sqrtf(disc)) / (2 * Aq);
+
+		if (t < 0) {
+			t = (-Bq + sqrtf(disc)) / (2 * Aq);
+		}
+
+		if (Aq == 0) {
+			t = -Cq / Bq;
+		}
+
+		Vector intersection = ray.position + ray.direction.norm() * t;
+		Vector normal = Vector(2 * A * intersection.x + D * intersection.y + E * intersection.z + G,
+			2 * B * intersection.y + D * intersection.x + F * intersection.z + H,
+			2 * C * intersection.z + E * intersection.x + F * intersection.y + I).norm();
+
+		if (normal * ray.direction > 0) {
+			normal = Vector(-normal.x, -normal.y, -normal.z);
+		}
+
+		Hit hit;
+		hit.normal = normal;
+		hit.position = intersection;
+		hit.t = t;
+		hit.material = material;
+
+		return hit;
+	}
 };
 
 // Fenyforras
 struct LightSource {
-	Vector position;
+	Vector position, speed;
 	Color color;
+	float power;
+
+	LightSource(float power = 20) {
+		this->power = power;
+	}
 
 	Color getLuminance(Vector& position) {
 		float d = (this->position - position).Length();
-		return color / powf(d, 2) * 20;
+		return (color / (d*d)) * power;
 	}
 };
 
@@ -673,6 +713,11 @@ Blobs blobs(Vector(10, 5, 5), Color(0.32f, 0.18f, 0.66f), Color(1, 1, 1));
 GoldMaterial goldMaterial;
 GlassMaterial glassMaterial;
 
+Vector ELLIPSOID_START_POS(9, 1, 9);
+Vector ELLIPSOID_SPEED = Vector(-1, 1, -1).norm() * 0.5f;
+Vector LIGHT_SOURCE_START_POS(4, 7, 6);
+Vector LIGHT_SOURCE_SPEED = Vector(1, 0, -1).norm() * 0.5;
+
 LightSource light;
 
 int endTime = 10000;
@@ -709,13 +754,13 @@ void init() {
 	objects[5] = &wallBottom;
 }
 
-Hit firstIntersect(Ray ray) {
+Hit firstIntersect(Ray ray, float elapsedTime) {
 	Hit firstHit;
 
 	for (int i = 0; i < 7; i++) {
 		Intersectable* obj = objects[i];
 		if (obj != 0) {
-			Hit hit = obj->intersect(ray);
+			Hit hit = obj->intersect(ray, elapsedTime);
 
 			if (hit.t > 0 && (firstHit.t < 0 || firstHit.t > hit.t)) {
 				firstHit = hit;
@@ -728,23 +773,42 @@ Hit firstIntersect(Ray ray) {
 
 const int maxDepth = 20;
 
-Color trace(Ray ray, int depth) {
+Color trace(Ray ray, int depth, float elapsedTime) {
 
 	if (depth > maxDepth) {
 		return AMBIENT;
 	}
 
-	Hit hit = firstIntersect(ray);
+	Hit hit = firstIntersect(ray, elapsedTime);
 	if (hit.t < 0) {
 		return AMBIENT;
 	}
 
+	float hitTime = elapsedTime - hit.t;
+
 	Color outRadiance;
 
-	Vector lightDir = light.position - hit.position;
+	Vector lightPosAtHit = light.position + light.speed * hitTime; // A fény helyzete az ütközés idejében
+
+	//Kiszámolt másodfokú egyenlet együtthatói
+	float La = powf(light.speed.Length(), 2) - 1;
+	float Lb = 2 * (light.speed.x*(hit.position.x - lightPosAtHit.x) + light.speed.y*(hit.position.y - lightPosAtHit.y) + light.speed.z*(hit.position.z - lightPosAtHit.z));
+	float Lc = powf(hit.position.x - lightPosAtHit.x, 2) + powf(hit.position.y - lightPosAtHit.y, 2) + powf(hit.position.z - lightPosAtHit.z, 2);
+
+	float disc = Lb*Lb - 4 * La*Lc; //Nem kéne hogy negatív legyen
+
+	float t = (-Lb - sqrtf(disc)) / 2 * La;
+
+	if (t > 0) {
+		t = (-Lb + sqrtf(disc)) / 2 * La;
+	}
+
+	Vector lightOrigin = light.position + light.speed * (hitTime - t); //Innen jött a fény
+
+	Vector lightDir = lightOrigin - hit.position;
 
 	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir.norm());
-	Hit shadowHit = firstIntersect(shadowRay);
+	Hit shadowHit = firstIntersect(shadowRay, elapsedTime);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
 		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.getLuminance(hit.position));
 	}
@@ -752,31 +816,32 @@ Color trace(Ray ray, int depth) {
 	if (hit.material->isReflective()) {
 		Vector reflectionDir = hit.material->reflect(ray.direction, hit.normal);
 		Ray reflectedRay(hit.position + hit.normal * EPSILON, reflectionDir);
-		outRadiance = outRadiance + trace(reflectedRay, depth + 1) * hit.material->Fresnel(ray.direction, hit.normal);
+		outRadiance = outRadiance + trace(reflectedRay, depth + 1, elapsedTime - hit.t) * hit.material->Fresnel(ray.direction, hit.normal);
 	}
 
 	if (hit.material->isRefractive()) {
 		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
 		Ray refractedRay(hit.position - hit.normal * EPSILON, reflectionDir);
-		outRadiance = outRadiance + trace(refractedRay, depth + 1) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
+		outRadiance = outRadiance + trace(refractedRay, depth + 1, elapsedTime - hit.t) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
 	}
 
 	return outRadiance;
 }
 
-void build(int elapsedTime) {
+void build(float elapsedTime) {
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(Vector(5, 3, 5), 3, 1, Vector(-1, -1, -1).norm(), &glassMaterial);
+	ellipsoid = Ellipsoid(ELLIPSOID_START_POS + ELLIPSOID_SPEED*(elapsedTime), 1, 0.25f, Vector(-1, 1, -1).norm(), &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
 	light.color = Color(1, 1, 1);
-	light.position = Vector(7, 7, 5);
+	light.speed = LIGHT_SOURCE_SPEED;
+	light.position = LIGHT_SOURCE_START_POS;
 
 	for (int Y = 0; Y < Camera::XM; Y++)
 		for (int X = 0; X < Camera::YM; X++) {
 			Ray ray = camera.getRay(X, Y);
-			image[Y*Camera::XM + X] = trace(ray, 0);
+			image[Y*Camera::XM + X] = trace(ray, 0, elapsedTime);
 		}
 }
 
@@ -802,7 +867,7 @@ void onKeyboard(unsigned char key, int x, int y)
 	if (key == ' ') {
 		//endTime = glutGet(GLUT_ELAPSED_TIME);
 
-		build(endTime);
+		build(endTime / 1000.0f);
 		glutPostRedisplay();
 	}
 }
