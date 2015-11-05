@@ -437,11 +437,7 @@ public:
 class Plane : public Intersectable {
 	Vector position, normal;
 public:
-	Plane() {
-
-	}
-
-	Plane(Vector position, Vector normal, Material* material) {
+	Plane(Vector position = Vector(), Vector normal = Vector(1, 0, 0), Material* material = 0) {
 		this->position = position;
 		this->normal = normal.norm();
 		this->material = material;
@@ -536,11 +532,7 @@ class Ellipsoid : public QuadricSurfaces {
 	Vector center, i, velocity;
 	float a, b;
 public:
-	Ellipsoid() {
-
-	}
-
-	Ellipsoid(Vector center, float a, float b, Vector i, Vector velocity, Material* material) {
+	Ellipsoid(Vector center = Vector(), float a = 1, float b = 1, Vector i = Vector(1, 0, 0), Vector velocity = Vector(), Material* material = 0) {
 		this->center = center;
 		this->velocity = velocity;
 		this->a = a;
@@ -599,10 +591,7 @@ public:
 
 class Paraboloid : public QuadricSurfaces {
 public:
-	Paraboloid() {
-
-	}
-	Paraboloid(Vector center, float a, Material* material) {
+	Paraboloid(Vector center = Vector(), float a = 1, Material* material = 0) {
 		this->material = material;
 		A = D = E = F = 0;
 		B = C = 1;
