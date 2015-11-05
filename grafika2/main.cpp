@@ -649,7 +649,7 @@ struct Camera {
 
 Vector ELLIPSOID_START_POS(9, 1, 9);
 Vector ELLIPSOID_SPEED = Vector(-1, 1, -1).norm() * 0.5f;
-Vector LIGHT_SOURCE_START_POS(4, 7, 6);
+Vector LIGHT_SOURCE_START_POS(4, 3, 6);
 Vector LIGHT_SOURCE_SPEED = Vector(1, 0, -1).norm() * 0.1f;
 Vector CAMERA_POS(9.5f, 1, 0.5f);
 Vector CAMERA_LOOK_AT_THIS_POINT(5, 5, 5);
