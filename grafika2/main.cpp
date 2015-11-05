@@ -815,9 +815,12 @@ void onDisplay()
 
 }
 
+bool pressed = false;
+
 void onKeyboard(unsigned char key, int x, int y)
 {
-	if (key == ' ') {
+	if (!pressed && key == ' ') {
+		pressed = true;
 		int time = glutGet(GLUT_ELAPSED_TIME);
 		build(time / 1000.0f);
 		glutPostRedisplay();
