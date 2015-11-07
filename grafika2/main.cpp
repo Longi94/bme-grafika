@@ -63,7 +63,7 @@
 // Innentol modosithatod...
 
 const float LIGHT_C = 1.0f;
-const float EPSILON = 0.01f;
+const float EPSILON = 0.001f;
 
 struct Vector {
 	float x, y, z;
@@ -638,10 +638,11 @@ struct Camera {
 
 Vector ELLIPSOID_START_POS(1, 1, 1);
 Vector ELLIPSOID_SPEED = Vector(1, 1, 1).norm() * 0.5f;
-Vector LIGHT_SOURCE_START_POS(5, 5, 5);
-Vector LIGHT_SOURCE_SPEED = Vector(0, 0, 0);
-Vector CAMERA_POS(9.9f, 5, 5);
-Vector CAMERA_LOOK_AT_THIS_POINT(5, 5, 5);
+Vector ELLIPSOID_I = Vector(1, 1, 1).norm();
+Vector LIGHT_SOURCE_START_POS(5, 3, 5);
+Vector LIGHT_SOURCE_SPEED = Vector(0.5f, 0, 1).norm() * 0.1f;
+Vector CAMERA_POS(5, 2, 0.1f);
+Vector CAMERA_LOOK_AT_THIS_POINT(1, 4, 4);
 
 Color image[Camera::XM*Camera::YM];
 
@@ -761,7 +762,7 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 	Vector lightDir = lightOrigin - hit.position;
 
 	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir.norm());
-	Hit shadowHit = firstIntersect(shadowRay, elapsedTime - hit.t);
+	Hit shadowHit = firstIntersect(shadowRay, hitTime);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
 		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.getLuminance(hit.position));
 	}
@@ -769,13 +770,13 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 	if (hit.material->isReflective()) {
 		Vector reflectionDir = hit.material->reflect(ray.direction, hit.normal);
 		Ray reflectedRay(hit.position + hit.normal * EPSILON, reflectionDir);
-		outRadiance = outRadiance + trace(reflectedRay, depth + 1, elapsedTime - hit.t) * hit.material->Fresnel(ray.direction, hit.normal);
+		outRadiance = outRadiance + trace(reflectedRay, depth + 1, hitTime) * hit.material->Fresnel(ray.direction, hit.normal);
 	}
 
 	if (hit.material->isRefractive()) {
 		Vector reflectionDir = hit.material->refract(ray.direction, hit.normal);
 		Ray refractedRay(hit.position - hit.normal * EPSILON, reflectionDir);
-		outRadiance = outRadiance + trace(refractedRay, depth + 1, elapsedTime - hit.t) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
+		outRadiance = outRadiance + trace(refractedRay, depth + 1, hitTime) * (Color(1, 1, 1) - hit.material->Fresnel(ray.direction, hit.normal));
 	}
 
 	return outRadiance;
@@ -783,7 +784,7 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 
 void build(float elapsedTime) {
 	//Init ellipsoid
-	ellipsoid = Ellipsoid(ELLIPSOID_START_POS, 1, 0.25f, Vector(1, 1, 1).norm(), ELLIPSOID_SPEED, &glassMaterial);
+	ellipsoid = Ellipsoid(ELLIPSOID_START_POS, 1, 0.25f, ELLIPSOID_I, ELLIPSOID_SPEED, &glassMaterial);
 	objects[6] = &ellipsoid;
 
 	//light init
