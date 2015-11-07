@@ -129,9 +129,8 @@ struct Color {
 
 const Color AMBIENT(0.1f, 0.1f, 0.1f);
 
-//Kibaszott sugar
 struct Ray {
-	Vector position, direction; //Kindulasi hely es iranya
+	Vector position, direction;
 
 	Ray(Vector position, Vector direction) {
 		this->position = position;
@@ -139,14 +138,12 @@ struct Ray {
 	}
 };
 
-//Anyag interfesz (abstract)
 class Material {
 protected:
-	//Smooth
-	Color F0; //Fresnel, anyagra jellemzo const: ((n-1)*(n-1) + k*k) / ((n+1)*(n+1) + k*k)
-	Color N; //toresmutato
+	Color F0;
+	Color N;
 
-	float shininess; //fenyesseg
+	float shininess;
 public:
 	virtual bool isReflective() = 0;
 	virtual bool isRefractive() = 0; 
@@ -178,7 +175,7 @@ public:
 	Color shade(Vector& position, Vector& normal, Vector& viewDir, Vector& lightDir, Color& radIn) {
 		Color radOut;
 
-		float cosTheta = normal * lightDir; //Lambert trv
+		float cosTheta = normal * lightDir;
 		if (cosTheta < 0) {
 			return radOut;
 		}
@@ -204,18 +201,16 @@ public:
 	}
 };
 
-//Talalat!!
 struct Hit {
-	float t; //Ido
-	Vector position, normal; //Az utkozes poxicioja, es a felulet normal vektora
-	Material *material; //A felulet anyaga
+	float t;
+	Vector position, normal;
+	Material *material;
 
 	Hit() {
 		t = -1;
 	}
 };
 
-//Gooooolden
 class GoldMaterial : public Material {
 public:
 	GoldMaterial() {
@@ -232,7 +227,7 @@ public:
 	}
 
 	Color getDiffuseColor(Vector& position) {
-		return Color(); //gold
+		return Color();
 	}
 	Color getShineColor(Vector& position) {
 		return Color();
@@ -425,7 +420,6 @@ public:
 	}
 };
 
-//Utkozo kepes anyagok ososztalya
 class Intersectable {
 protected:
 	Material* material;
@@ -433,7 +427,6 @@ public:
 	virtual Hit intersect(Ray& ray, float elapsedTime) = 0;
 };
 
-//Sik
 class Plane : public Intersectable {
 	Vector position, normal;
 public:
@@ -447,7 +440,7 @@ public:
 
 		float dot = normal * ray.direction;
 
-		if (dot == 0) { //sugar parhozamos a sikkal
+		if (dot == 0) {
 			return Hit();
 		}
 
@@ -458,7 +451,7 @@ public:
 		//https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection#Algebraic_form
 		float x = ((position - ray.position) * normal) / dot;
 		if (x < 0) {
-			return Hit(); //A metszett hatrafele van
+			return Hit();
 		}
 		Vector intersection = ray.direction * x + ray.position;
 
@@ -603,7 +596,6 @@ public:
 	}
 };
 
-// Fenyforras
 struct LightSource {
 	Vector position, velocity;
 	Color color;
@@ -670,21 +662,18 @@ GlassMaterial glassMaterial;
 LightSource light;
 
 void init() {
-	//camera init
 	Vector up = Vector(0, 1, 0);
 
 	camera = Camera();
 	camera.eye = CAMERA_POS;
 	camera.lookat = CAMERA_LOOK_AT_THIS_POINT;
 
-	//magic
 	camera.lookat = ((camera.lookat - camera.eye).norm() * 2) + camera.eye;
 	camera.right = (camera.lookat - camera.eye) % up;
 	camera.right = camera.right.norm() * 2;
 	camera.up = camera.right % (camera.lookat - camera.eye);
 	camera.up = camera.up.norm() * 2;
 
-	//flat walls init
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wonky);
 	wallBack = Plane(Vector(0, 0, 0), Vector(0, 0, 1), &checkersDiagonal);
@@ -735,14 +724,13 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 
 	Color outRadiance;
 
-	Vector lightPosAtHit = light.position + light.velocity * hitTime; // A fény helyzete az ütközés idejében
+	Vector lightPosAtHit = light.position + light.velocity * hitTime;
 
-	//Kiszámolt másodfokú egyenlet együtthatói
 	float La = powf(light.velocity.Length(), 2) - 1;
 	float Lb = 2 * (light.velocity.x*(hit.position.x - lightPosAtHit.x) + light.velocity.y*(hit.position.y - lightPosAtHit.y) + light.velocity.z*(hit.position.z - lightPosAtHit.z));
 	float Lc = powf(hit.position.x - lightPosAtHit.x, 2) + powf(hit.position.y - lightPosAtHit.y, 2) + powf(hit.position.z - lightPosAtHit.z, 2);
 
-	float disc = Lb*Lb - 4 * La*Lc; //Nem kéne hogy negatív legyen
+	float disc = Lb*Lb - 4 * La*Lc;
 
 	float t;
 	if (fabsf(La) < EPSILON) {
@@ -783,11 +771,9 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 }
 
 void build(float elapsedTime) {
-	//Init ellipsoid
 	ellipsoid = Ellipsoid(ELLIPSOID_START_POS, 1, 0.25f, ELLIPSOID_I, ELLIPSOID_SPEED, &glassMaterial);
 	objects[6] = &ellipsoid;
 
-	//light init
 	light.color = Color(1, 1, 1);
 	light.velocity = LIGHT_SOURCE_SPEED;
 	light.position = LIGHT_SOURCE_START_POS;
