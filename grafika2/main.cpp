@@ -577,8 +577,8 @@ public:
 
 		Vector p = ray.position - (velocity * elapsedTime);
 		Vector d = ray.direction * LIGHT_C + velocity;
-
-		return QuadricSurfaces::intersect(Ray(p, d), elapsedTime);
+		Ray newRay = Ray(p, d);
+		return QuadricSurfaces::intersect(newRay, elapsedTime);
 	}
 };
 
@@ -605,8 +605,8 @@ struct LightSource {
 		this->power = power;
 	}
 
-	Color getLuminance(Vector& position) {
-		float d = (this->position - position).Length();
+	Color getLuminance(Vector& pos) {
+		float d = (position - pos).Length();
 		return (color / (d*d)) * power;
 	}
 };
@@ -752,7 +752,9 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 	Ray shadowRay = Ray(hit.position + hit.normal * EPSILON, lightDir.norm());
 	Hit shadowHit = firstIntersect(shadowRay, hitTime);
 	if (shadowHit.t < 0 || shadowHit.t > lightDir.Length()) {
-		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDir.norm(), light.getLuminance(hit.position));
+		Vector lightDirNorm = lightDir.norm();
+		Color luminance = light.getLuminance(hit.position);
+		outRadiance = outRadiance + hit.material->shade(hit.position, hit.normal, ray.direction, lightDirNorm, luminance);
 	}
 
 	if (hit.material->isReflective()) {
