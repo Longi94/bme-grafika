@@ -623,8 +623,9 @@ Vector ELLIPSOID_START_POS(1, 1, 1);
 Vector ELLIPSOID_SPEED = Vector(1, 1, 1).norm() * 0.5f;
 Vector ELLIPSOID_I = Vector(1, 1, 1).norm();
 Vector LIGHT_SOURCE_START_POS(5, 3, 5);
-Vector LIGHT_SOURCE_SPEED = Vector(0.5f, 0, 1).norm() * 0.1f;
+Vector LIGHT_SOURCE_SPEED = Vector(0.5f, 0, 1).norm() * 0.5f;
 Vector CAMERA_POS(5, 2, 0.1f);
+Vector CAMERA_SPEED(0.2f, 0, 0);
 Vector CAMERA_LOOK_AT_THIS_POINT(1, 4, 4);
 
 Color image[Camera::XM*Camera::YM];
@@ -653,17 +654,9 @@ GlassMaterial glassMaterial;
 LightSource light;
 
 void init() {
-	Vector up = Vector(0, 1, 0);
 
 	camera = Camera();
-	camera.eye = CAMERA_POS;
 	camera.lookat = CAMERA_LOOK_AT_THIS_POINT;
-
-	camera.lookat = ((camera.lookat - camera.eye).norm() * 2) + camera.eye;
-	camera.right = (camera.lookat - camera.eye) % up;
-	camera.right = camera.right.norm() * 2;
-	camera.up = camera.right % (camera.lookat - camera.eye);
-	camera.up = camera.up.norm() * 2;
 
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wonky);
@@ -771,6 +764,16 @@ Color trace(Ray ray, int depth, float elapsedTime) {
 }
 
 void build(float elapsedTime) {
+
+	Vector up = Vector(0, 1, 0);
+
+	camera.eye = CAMERA_POS + CAMERA_SPEED * elapsedTime * LIGHT_C;
+
+	camera.lookat = ((camera.lookat - camera.eye).norm() * 2) + camera.eye;
+	camera.right = (camera.lookat - camera.eye) % up;
+	camera.right = camera.right.norm() * 2;
+	camera.up = camera.right % (camera.lookat - camera.eye);
+	camera.up = camera.up.norm() * 2;
 
 	for (int Y = 0; Y < Camera::XM; Y++)
 		for (int X = 0; X < Camera::YM; X++) {
