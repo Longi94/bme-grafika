@@ -47,6 +47,7 @@
 #include <cstdio> 
 #include <algorithm>
 #include <iostream>
+#include <time.h>
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -773,8 +774,19 @@ void build(float elapsedTime) {
 
 	for (int Y = 0; Y < Camera::XM; Y++)
 		for (int X = 0; X < Camera::YM; X++) {
-			Ray ray = camera.getRay(X, Y);
-			image[Y*Camera::XM + X] = trace(ray, 0, elapsedTime);
+			Color sum;
+			const int sample = 16;
+
+			for (int i = 0; i < sample; ++i) {
+
+				float x_ = X + float(rand()) / RAND_MAX - 0.5f;
+				float y_ = Y + float(rand()) / RAND_MAX - 0.5f;
+
+				Ray ray = camera.getRay(x_, y_);
+				sum = sum + trace(ray, 0, elapsedTime);
+			}
+
+			image[Y*Camera::XM + X] = sum / sample;
 		}
 }
 
@@ -806,6 +818,8 @@ void saveImage(int i) {
 
 // A C++ program belepesi pontja, a main fuggvenyt mar nem szabad bantani
 int main(int argc, char **argv) {
+
+	srand(time(NULL));
 
 	float fps = 30.0f;
 	float seconds = 20.0f;
