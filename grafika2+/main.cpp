@@ -625,8 +625,9 @@ Vector ELLIPSOID_I = Vector(1, 1, 1).norm();
 Vector LIGHT_SOURCE_START_POS(5, 3, 5);
 Vector LIGHT_SOURCE_SPEED = Vector(0.5f, 0, 1).norm() * 0.5f;
 Vector CAMERA_POS(5, 2, 0.1f);
-Vector CAMERA_SPEED(0.2f, 0, 0);
-Vector CAMERA_LOOK_AT_THIS_POINT(1, 4, 4);
+Vector CAMERA_SPEED(0.15f, 0, 0);
+Vector CAMERA_LOOK_AT(1, 4, 4);
+Vector CAMERA_LOOK_AT_END(5, 4, 4);
 
 Color image[Camera::XM*Camera::YM];
 
@@ -656,7 +657,7 @@ LightSource light;
 void init() {
 
 	camera = Camera();
-	camera.lookat = CAMERA_LOOK_AT_THIS_POINT;
+	camera.lookat = CAMERA_LOOK_AT;
 
 	wallLeft = Plane(Vector(10, 10, 10), Vector(-1, 0, 0), &blobs);
 	wallFront = Plane(Vector(10, 10, 10), Vector(0, 0, -1), &wonky);
@@ -769,7 +770,9 @@ void build(float elapsedTime) {
 
 	camera.eye = CAMERA_POS + CAMERA_SPEED * elapsedTime * LIGHT_C;
 
-	camera.lookat = ((camera.lookat - camera.eye).norm() * 2) + camera.eye;
+	Vector lookat = CAMERA_LOOK_AT + ((CAMERA_LOOK_AT_END - CAMERA_LOOK_AT) * (elapsedTime / 30.0f));
+
+	camera.lookat = ((lookat - camera.eye).norm() * 2) + camera.eye;
 	camera.right = (camera.lookat - camera.eye) % up;
 	camera.right = camera.right.norm() * 2;
 	camera.up = camera.right % (camera.lookat - camera.eye);
@@ -791,6 +794,12 @@ void build(float elapsedTime) {
 
 			image[Y*Camera::XM + X] = sum / sample;
 		}
+
+	/*for (int Y = 0; Y < Camera::XM; Y++)
+		for (int X = 0; X < Camera::YM; X++) {
+			Ray ray = camera.getRay(X, Y);
+			image[Y*Camera::XM + X] = trace(ray, 0, elapsedTime);
+		}*/
 }
 
 void saveImage(int i) {
@@ -825,7 +834,7 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
 
 	float fps = 30.0f;
-	float seconds = 20.0f;
+	float seconds = 30.0f;
 
 	init();
 
