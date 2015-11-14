@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <cstdio> 
 #include <algorithm>
+#include <iostream>
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -777,18 +778,13 @@ void build(float elapsedTime) {
 		}
 }
 
-// ...Idaig modosithatod
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void saveImage(int i) {
 
-// A C++ program belepesi pontja, a main fuggvenyt mar nem szabad bantani
-int main(int argc, char **argv) {
-
-	init();
-
-	build(10);
+	char filename[20];
+	sprintf_s(filename, "output/%d.ppm", i);
 
 	FILE* file;
-	fopen_s(&file, "image.ppm", "wb");
+	fopen_s(&file, filename, "wb");
 
 	(void)fprintf_s(file, "P6\n%d %d\n255\n", Camera::XM, Camera::YM);
 
@@ -803,6 +799,26 @@ int main(int argc, char **argv) {
 		}
 
 	(void)fclose(file);
+}
+
+// ...Idaig modosithatod
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// A C++ program belepesi pontja, a main fuggvenyt mar nem szabad bantani
+int main(int argc, char **argv) {
+
+	float fps = 30.0f;
+	float seconds = 20.0f;
+
+	init();
+
+	for (int frame = 0; frame < seconds * fps; frame++)
+	{
+		float t = frame / fps;
+		std::cout << "Frame: " << frame << ", Seconds: " << t << std::endl;
+		build(t);
+		saveImage(frame);
+	}
 
 	return 0;
 }
