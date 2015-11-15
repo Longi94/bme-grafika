@@ -14,7 +14,11 @@ Beadási határidő: **2015. 10. 17. 23:59**
 
 ### Második feladat
 
-Készítsen sugárkövető programot, amely egy szobát és az abban mozgó üveg ellipszoidot jelenít meg mozgó pontszerű fényforrás megvilágítása mellett. A virtuális világban a fény terjedési sebessége 1 m/s. A szoba egyik oldala aranyból van, optikailag sima és forgásparaboloid geometriájú. A szoba többi oldala diffúz és valamilyen mintával textúrázott sík. A szoba mérete 10 m x 10 m x 10 m volna, ha eltekintenénk a paraboloid kitüremkedésétől.
+Készítsen sugárkövető programot, amely egy szobát és az abban mozgó üveg ellipszoidot jelenít meg mozgó pontszerű fényforrás megvilágítása mellett.
+
+**A virtuális világban a fény terjedési sebessége 1 m/s!!! (ezen feltételt mellőző megoldások nem fogadhatók el)**
+
+A szoba egyik oldala aranyból van, optikailag sima és forgásparaboloid geometriájú. A szoba többi oldala diffúz és valamilyen mintával textúrázott sík. A szoba mérete 10 m x 10 m x 10 m volna, ha eltekintenénk a paraboloid kitüremkedésétől.
 
 Az üveg ellipszoid tengelyei a világkoordinátarendszer egyik tengelyével sem párhuzamosak. A leghosszabb tengely 2 m, a legrövidebb 0.5 m. Az ellipszoid egyenes vonalú egyenletes mozgást véget a szoba sarkából 0.5 m/sec sebességgel úgy, hogy legalább 10 másodpercig a szoba belsejében tartózkodik, mialatt a kamerából látható.
 
@@ -27,6 +31,20 @@ Az arany törésmutatója és kioltási tényezője: r: 0.17/3.1, g: 0.35/2.7, b
 Az üveg törésmutatója és kioltási tényezője: r: 1.5/0, g: 1.5/0, b: 1.5/0
 
 Beadási határidő: **2015. 11. 08. 23:59**
+
+### Harmadik feladat
+
+Készítsen CSIRGURU BOMBÁZÓ játékot. A csirguru a csirke és a kenguru nászából született jószág, csirke teste, csőre, szemei, taraja van, valamint egy lába, amivel kenguruszerűen ugrál. A lába a csípőízületben nem fordul el, a térízületben hátra fordul, a bokában előre (amit a normál csirke esetében hajlamosak vagyunk előre hajló térdnek hinni). Az egy szem lábujj ugyancsak felfelé hajlítható, az ízületek tengelyei egymással párhuzamosak.
+
+A csirguruk testét néhány zárt Bézier görbével definiált keresztmetszetek Catmull-Rom spline-t alkalmazó transzfinit interpolációjával kell létrehozni. A szem, csör, taraj, lábrészek ismert egyenletű paraméteres felületekből (pl. gömb, kúp, henger, paraboloid stb.) összerakhatók.
+
+A csirguruk egy sík, textúrázott és megvilágított terepen a bomba aktuális helye alatt, a program indításától számított másodpercenként születnek meg, majd elkezdenek ugrándozni. A lendületvételi fázisban a csirguru feneke a földhöz közelít, majd a térdízület EGYENES VONALÚ GYORSULÓ MOZGÁST (inverz kinematika) végez, mialatt a lábujj a talajon marad, a térd pedig vízszintesen tartja a csirgurut. A bokaízület kiegyenesedése pillantában a csirguru elszakad a földtől és lendületvétel végén elért kezdősebességű ferde hajítással leírható pályán ugrik, a levegőben előreteszi a lábát, a földetérkezésnél pedig a lendületvételt visszafelé játsza le. Az ugrálást ismételgetheti, az egyes ugrálások között a haladási irányát ízlésesen változtatva.
+
+A felhasználó egy bombát irányíthat a mező fölött egy síkban az A, W, D, Y billentyűkkel, majd SPACE-re a bomba leesik. Ha a bomba egy csirguru közelében esik le, a csirguru testrészei független ferde hajítást követnek, mialatt midegyik testrész egy-egy forgástengely körül forog.
+
+A színteret egy irányfényforrás (nap) és ambiens fényforrás világítja meg, a csirguruk és a bombák a talajra árnyékot (síkra vetített árnyék algoritmus) vetnek.
+
+Beadási határidő: **2015. 12. 06. 23:59**
 
 ### A megoldás módja
 
