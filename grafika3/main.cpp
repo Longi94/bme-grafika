@@ -77,19 +77,25 @@ struct Vector {
 	Vector operator*(float a) {
 		return Vector(x * a, y * a, z * a);
 	}
+	Vector operator/(float a) {
+		return Vector(x / a, y / a, z / a);
+	}
 	Vector operator+(const Vector& v) {
 		return Vector(x + v.x, y + v.y, z + v.z);
 	}
 	Vector operator-(const Vector& v) {
 		return Vector(x - v.x, y - v.y, z - v.z);
 	}
-	float operator*(const Vector& v) { 	// dot product
+	float operator*(const Vector& v) { //dot
 		return (x * v.x + y * v.y + z * v.z);
 	}
-	Vector operator%(const Vector& v) { 	// cross product
+	Vector operator%(const Vector& v) { //cross
 		return Vector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 	}
 	float Length() { return sqrt(x * x + y * y + z * z); }
+	Vector norm() {
+		return Vector(x / Length(), y / Length(), z / Length());
+	}
 };
 
 //--------------------------------------------------------
@@ -118,6 +124,10 @@ struct Color {
 struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
+
+	Vector eye, lookat, up;
+
+	Camera(Vector eye, Vector lookat, Vector up) :eye(eye), lookat(lookat), up(up) {}
 };
 
 class Object {
@@ -179,12 +189,40 @@ public:
 };
 
 class Field {
+public:
+	void draw() {
+		glBegin(GL_QUADS);
+
+		glColor3f(1, 1, 0);
+		glVertex3f(0, 0, 0);
+		glVertex3f(10, 0, 0);
+		glVertex3f(10, 0, 10);
+		glVertex3f(0, 0, 10);
+
+		glEnd();
+	}
+};
+
+class Scene {
 protected:
 	static const Vector AMBIENT_LIGHT;
 	static const Vector SUN_LIGHT;
 
 	Csirguru* csirgurus; //láncolt lista kéne
+
+	Field field;
 public:
+	//static Camera camera;
+	Scene() {}
+
+	void init() {
+		field = Field();
+	}
+
+	void draw() {
+		field.draw();
+	}
+
 	void addCsirguru(Vector pos) {
 
 	}
@@ -194,18 +232,82 @@ public:
 	}
 };
 
-const Vector Field::AMBIENT_LIGHT = Vector(0.1f, 0.1f, 0.1f);
-const Vector Field::SUN_LIGHT = Vector();
+const Vector Scene::AMBIENT_LIGHT = Vector(0.1f, 0.1f, 0.1f);
+const Vector Scene::SUN_LIGHT = Vector();
 
 Color image[Camera::XM*Camera::YM];
 
+void glVertex3f(const Vector& v) {
+	glVertex3f(v.x, v.y, v.z);
+}
+
+void glQuad(Vector& a, Vector& b, Vector& c, Vector& d) {
+	Vector normal = ((b - a) % (c - a)).norm();
+	glColor3f(fabs(normal.x), fabs(normal.y), fabs(normal.z));
+	glVertex3f(a); glVertex3f(b); glVertex3f(c); glVertex3f(d);
+}
+
+void drawCube(Vector& size) {
+	glBegin(GL_QUADS); {
+		/*       (E)-----(A)
+				 /|      /|
+				/ |     / |
+			  (F)-----(B) |
+			   | (H)---|-(D)
+			   | /     | /
+			   |/      |/
+			  (G)-----(C)        */
+
+		Vector s = size / 2;
+
+		Vector A(+s.x, +s.y, -s.z), B(+s.x, +s.y, +s.z), C(+s.x, -s.y, +s.z), D(+s.x, -s.y, -s.z),
+			E(-s.x, +s.y, -s.z), F(-s.x, +s.y, +s.z), G(-s.x, -s.y, +s.z), H(-s.x, -s.y, -s.z);
+
+		glQuad(A, B, C, D); glQuad(E, H, G, F); glQuad(A, E, F, B);
+		glQuad(D, C, G, H); glQuad(B, F, G, C); glQuad(A, D, H, E);
+
+	} glEnd();
+}
+
+Scene scene;
+
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
+
+	//Scene::camera = Camera(Vector(5, 10, 5), Vector(5, 0, 5), Vector(0, 0, -1));
+
+	/*glMatrixMode(GL_PROJECTION);
+	gluPerspective(90, 1, 0.1, 11);
+	glMatrixMode(GL_MODELVIEW);
+	gluLookAt(Scene::camera.eye.x, Scene::camera.eye.y, Scene::camera.eye.z,
+		Scene::camera.lookat.x, Scene::camera.lookat.y, Scene::camera.lookat.z,
+		Scene::camera.up.x, Scene::camera.up.y, Scene::camera.up.z);*/
+
+	//Rendes 3d
+	glEnable(GL_DEPTH_TEST);
+	//Világítás engedélyezése
+	glEnable(GL_LIGHTING);
+	//Ambiens fény?
+	glEnable(GL_COLOR_MATERIAL);
+
+
+	glMatrixMode(GL_PROJECTION);
+	gluPerspective(60, 1, 0.1, 20);
+	glMatrixMode(GL_MODELVIEW);
+	gluLookAt(-3, 2, -1, 0, 0, 0, 0, 1, 0);
+
+	scene = Scene();
+	scene.init();
 }
 
 void onDisplay() {
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClearColor(0, 0, 0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+
+	glColor3f(1, 1, 1);
+	drawCube(Vector(1, 1, 1));
+
+	scene.draw();
 
 	glutSwapBuffers();
 
