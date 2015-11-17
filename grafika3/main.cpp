@@ -121,7 +121,7 @@ struct Color {
 	}
 };
 
-struct Camera {
+/*struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
 
@@ -130,7 +130,60 @@ struct Camera {
 	Camera() :eye(Vector()), lookat(Vector()), up(Vector()) {}
 
 	Camera(Vector eye, Vector lookat, Vector up) :eye(eye), lookat(lookat), up(up) {}
-};
+};*/
+
+enum ControllKeys { W, A, S, D, keys_num };
+bool keys_down[keys_num];
+
+struct Camera {
+	static const int XM = 600;
+	static const int YM = 600;
+	Vector fwd, pos;
+	const float speed, mouse_speed;
+
+	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(9, 0, 4).norm()), pos(-9, 5, -4), speed(speed), mouse_speed(mouse_speed) { }
+
+	void updatePos(float dt) {
+		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
+		up = (right % fwd).norm();
+
+		if (keys_down[W] && !keys_down[S]) {
+			pos = pos + fwd * speed * dt;
+		}
+		else if (keys_down[S] && !keys_down[W]) {
+			pos = pos - fwd * speed * dt;
+		}
+
+		if (keys_down[D] && !keys_down[A]) {
+			pos = pos + right * speed * dt;
+		}
+		else if (keys_down[A] && !keys_down[D]) {
+			pos = pos - right * speed * dt;
+		}
+	}
+
+	void updateDir(int dx, int dy) {
+		Vector y_axis = Vector(0, 1, 0), right = (fwd % y_axis).norm();
+		Vector up = (right % fwd).norm();
+
+		// Ha teljesen felfele / lefele nĂŠznĂŠnk, akkor ne forduljon ĂĄt a kamera
+		float dot_up_fwd = (y_axis * fwd);
+		if (dot_up_fwd > 0.95f && dy > 0) {
+			dy = 0;
+		}
+		if (dot_up_fwd < -0.95f && dy < 0) {
+			dy = 0;
+		}
+
+		// MĂłdosĂ­tsuk az nĂŠzeti irĂĄnyt
+		fwd = fwd + (right * dx + up * dy) * mouse_speed;
+		fwd = fwd.norm();
+	}
+
+	void applyMatrix() const {
+		gluLookAt(pos.x, pos.y, pos.z, pos.x + fwd.x, pos.y + fwd.y, pos.z + fwd.z, 0, 1, 0);
+	}
+} camera;
 
 class Object {
 	Vector position;
@@ -196,10 +249,19 @@ public:
 		glBegin(GL_QUADS);
 
 		glColor3f(1, 1, 0);
-		glVertex3f(0, 0, 0);
-		glVertex3f(10, 0, 0);
-		glVertex3f(10, 0, 10);
-		glVertex3f(0, 0, 10);
+
+		float f = 0.1f;
+
+		for (float i = 0; i < 10; i += f)
+		{
+			for (float j = 0; j < 10; j += f)
+			{
+				glVertex3f(i, 0, j);
+				glVertex3f(i + f, 0, j);
+				glVertex3f(i + f, 0, j + f);
+				glVertex3f(i, 0, j + f);
+			}
+		}
 
 		glEnd();
 	}
@@ -215,22 +277,22 @@ protected:
 public:
 	float lightColor[4];
 	float lightPosition[4];
-	Camera camera;
+	//Camera camera;
 
 	Scene() {
 		field = Field();
-		camera = Camera();
+		//camera = Camera();
 	}
 
 	void init() {
 		lightColor[0] = 1;
 		lightColor[1] = 1;
 		lightColor[2] = 1;
-		lightColor[3] = 0;
+		lightColor[3] = 1;
 
-		lightPosition[0] = 10;
-		lightPosition[1] = 20;
-		lightPosition[2] = 10;
+		lightPosition[0] = 0;
+		lightPosition[1] = 0;
+		lightPosition[2] = 1;
 		lightPosition[3] = 0;
 	}
 
@@ -250,39 +312,6 @@ public:
 const Vector Scene::SUN_LIGHT = Vector();
 
 Color image[Camera::XM*Camera::YM];
-
-void glVertex3f(const Vector& v) {
-	glVertex3f(v.x, v.y, v.z);
-}
-
-void glQuad(Vector& a, Vector& b, Vector& c, Vector& d) {
-	Vector normal = ((b - a) % (c - a)).norm();
-	glColor3f(fabs(normal.x), fabs(normal.y), fabs(normal.z));
-	glVertex3f(a); glVertex3f(b); glVertex3f(c); glVertex3f(d);
-}
-
-void drawCube(Vector& size) {
-	glBegin(GL_QUADS); {
-		/*       (E)-----(A)
-				 /|      /|
-				/ |     / |
-			  (F)-----(B) |
-			   | (H)---|-(D)
-			   | /     | /
-			   |/      |/
-			  (G)-----(C)        */
-
-		Vector s = size / 2;
-
-		Vector A(+s.x, +s.y, -s.z), B(+s.x, +s.y, +s.z), C(+s.x, -s.y, +s.z), D(+s.x, -s.y, -s.z),
-			E(-s.x, +s.y, -s.z), F(-s.x, +s.y, +s.z), G(-s.x, -s.y, +s.z), H(-s.x, -s.y, -s.z);
-
-		glQuad(A, B, C, D); glQuad(E, H, G, F); glQuad(A, E, F, B);
-		glQuad(D, C, G, H); glQuad(B, F, G, C); glQuad(A, D, H, E);
-
-	} glEnd();
-}
-
 Scene scene;
 
 void onInitialization() {
@@ -291,44 +320,60 @@ void onInitialization() {
 	scene = Scene();
 	scene.init();
 
-	scene.camera = Camera(Vector(-3, 2, -1), Vector(0, 0, 0), Vector(0, 1, 0));
+	//scene.camera = Camera(Vector(3, 2, -3), Vector(5, 0, 5), Vector(0, 1, 0));
 
 	//Rendes 3d
 	glEnable(GL_DEPTH_TEST);
+
+	glMatrixMode(GL_PROJECTION);
+	gluPerspective(60, 1, 0.2, 200);
+	glMatrixMode(GL_MODELVIEW);
+	camera.applyMatrix();
+	/*gluLookAt(scene.camera.eye.x, scene.camera.eye.y, scene.camera.eye.z,
+		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
+		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);*/
+
 	//Világítás engedélyezése
 	glEnable(GL_LIGHTING);
 	//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
-
+	//Irányfényforrás
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
 	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
 	glEnable(GL_LIGHT0);
 
-	glMatrixMode(GL_PROJECTION);
-	gluPerspective(60, 1, 0.1, 20);
-	glMatrixMode(GL_MODELVIEW);
-	gluLookAt(scene.camera.eye.x, scene.camera.eye.y, scene.camera.eye.z,
-		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
-		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
+	glEnable(GL_SMOOTH);
 }
 
 void onDisplay() {
 	glClearColor(0, 0, 0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
-	glColor3f(1, 1, 1);
-	drawCube(Vector(1, 1, 1));
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	camera.applyMatrix();
+
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
+	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
+	glEnable(GL_LIGHT0);
 
 	scene.draw();
+
+	glBegin(GL_QUADS);
+	glColor3f(0, 1, 1);
+	glVertex3f(4, 1, 4);
+	glVertex3f(4, 1, 6);
+	glVertex3f(6, 1, 6);
+	glVertex3f(6, 1, 4);
+	glEnd();
 
 	glutSwapBuffers();
 
 }
 
 void onKeyboard(unsigned char key, int x, int y) {
-	if (key == 'd') glutPostRedisplay(); 		// d beture rajzold ujra a kepet
-
-	switch (key)
+	/*switch (key)
 	{
 	case 'a':
 		//TODO move crosshair left
@@ -339,7 +384,7 @@ void onKeyboard(unsigned char key, int x, int y) {
 	case 'd':
 		//TODO move crosshair right
 		break;
-	case /*'y'*/'s':
+	case 'y''s':
 		//TODO move crosshair down
 		break;
 	case ' ':
@@ -348,23 +393,63 @@ void onKeyboard(unsigned char key, int x, int y) {
 	default:
 		//nothing
 		break;
+	}*/
+
+	switch (key) {
+	case 'w': case 'W':
+		keys_down[W] = true;
+		break;
+	case 's': case 'S':
+		keys_down[S] = true;
+		break;
+	case 'a': case 'A':
+		keys_down[A] = true;
+		break;
+	case 'd': case 'D':
+		keys_down[D] = true;
+		break;
 	}
 }
 
 void onKeyboardUp(unsigned char key, int x, int y) {
-
+	switch (key) {
+	case 'w': case 'W':
+		keys_down[W] = false;
+		break;
+	case 's': case 'S':
+		keys_down[S] = false;
+		break;
+	case 'a': case 'A':
+		keys_down[A] = false;
+		break;
+	case 'd': case 'D':
+		keys_down[D] = false;
+		break;
+	}
 }
 
+int last_x, last_y;
 void onMouse(int button, int state, int x, int y) {
+	last_x = x;
+	last_y = y;
 
 }
 
 void onMouseMotion(int x, int y) {
+	camera.updateDir(x - last_x, last_y - y);
+	last_x = x;
+	last_y = y;
 
 }
 
 void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME);
+	static float last_time = glutGet(GLUT_ELAPSED_TIME);
+	float time = glutGet(GLUT_ELAPSED_TIME);
+	float dt = (time - last_time) / 1000.0f;
+	last_time = time;
+
+	camera.updatePos(dt);
+	glutPostRedisplay();
 }
 
 // ...Idaig modosithatod
