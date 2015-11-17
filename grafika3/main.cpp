@@ -127,6 +127,8 @@ struct Camera {
 
 	Vector eye, lookat, up;
 
+	Camera() :eye(Vector()), lookat(Vector()), up(Vector()) {}
+
 	Camera(Vector eye, Vector lookat, Vector up) :eye(eye), lookat(lookat), up(up) {}
 };
 
@@ -205,18 +207,31 @@ public:
 
 class Scene {
 protected:
-	static const Vector AMBIENT_LIGHT;
 	static const Vector SUN_LIGHT;
 
 	Csirguru* csirgurus; //láncolt lista kéne
 
 	Field field;
 public:
-	//static Camera camera;
-	Scene() {}
+	float lightColor[4];
+	float lightPosition[4];
+	Camera camera;
+
+	Scene() {
+		field = Field();
+		camera = Camera();
+	}
 
 	void init() {
-		field = Field();
+		lightColor[0] = 1;
+		lightColor[1] = 1;
+		lightColor[2] = 1;
+		lightColor[3] = 0;
+
+		lightPosition[0] = 10;
+		lightPosition[1] = 20;
+		lightPosition[2] = 10;
+		lightPosition[3] = 0;
 	}
 
 	void draw() {
@@ -232,7 +247,6 @@ public:
 	}
 };
 
-const Vector Scene::AMBIENT_LIGHT = Vector(0.1f, 0.1f, 0.1f);
 const Vector Scene::SUN_LIGHT = Vector();
 
 Color image[Camera::XM*Camera::YM];
@@ -274,14 +288,10 @@ Scene scene;
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
 
-	//Scene::camera = Camera(Vector(5, 10, 5), Vector(5, 0, 5), Vector(0, 0, -1));
+	scene = Scene();
+	scene.init();
 
-	/*glMatrixMode(GL_PROJECTION);
-	gluPerspective(90, 1, 0.1, 11);
-	glMatrixMode(GL_MODELVIEW);
-	gluLookAt(Scene::camera.eye.x, Scene::camera.eye.y, Scene::camera.eye.z,
-		Scene::camera.lookat.x, Scene::camera.lookat.y, Scene::camera.lookat.z,
-		Scene::camera.up.x, Scene::camera.up.y, Scene::camera.up.z);*/
+	scene.camera = Camera(Vector(-3, 2, -1), Vector(0, 0, 0), Vector(0, 1, 0));
 
 	//Rendes 3d
 	glEnable(GL_DEPTH_TEST);
@@ -290,14 +300,16 @@ void onInitialization() {
 	//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
 
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
+	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
+	glEnable(GL_LIGHT0);
 
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(60, 1, 0.1, 20);
 	glMatrixMode(GL_MODELVIEW);
-	gluLookAt(-3, 2, -1, 0, 0, 0, 0, 1, 0);
-
-	scene = Scene();
-	scene.init();
+	gluLookAt(scene.camera.eye.x, scene.camera.eye.y, scene.camera.eye.z,
+		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
+		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);
 }
 
 void onDisplay() {
