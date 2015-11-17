@@ -27,8 +27,8 @@
 //
 // NYILATKOZAT
 // ---------------------------------------------------------------------------------------------
-// Nev    : <VEZETEKNEV(EK)> <KERESZTNEV(EK)>
-// Neptun : <NEPTUN KOD>
+// Nev    : Tran Thanh Long
+// Neptun : K4H9ZB
 // ---------------------------------------------------------------------------------------------
 // ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy 
 // mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem. 
@@ -115,74 +115,142 @@ struct Color {
 	}
 };
 
-const int screenWidth = 600;	// alkalmazås ablak felbontåsa
-const int screenHeight = 600;
+struct Camera {
+	static const int XM = 600;
+	static const int YM = 600;
+};
 
+class Object {
+	Vector position;
+public:
+	void fling(Vector dir) {
 
-Color image[screenWidth*screenHeight];	// egy alkalmazås ablaknyi kÊp
+	}
+};
 
+//a CSIRGURU szeme
+class CsirguruEye : public Object {
 
-										// Inicializacio, a program futasanak kezdeten, az OpenGL kontextus letrehozasa utan hivodik meg (ld. main() fv.)
+};
+
+//a CSIRGURU csőre
+class CsirguruBeak : public Object {
+
+};
+
+//a CSIRGURU taraja
+class CsirguruComb : public Object {
+
+};
+
+//a CSIGURU teste
+class CsirguruBody : public Object {
+
+};
+
+//a CSURGIRI lába
+class CsirguruLeg : public Object {
+	Object thigh, leg, foot, toe;
+};
+
+//sexy beast
+class Csirguru {
+protected:
+	CsirguruEye eyeLeft, eyeRight;
+	CsirguruBeak beak;
+	CsirguruBody body;
+	CsirguruComb comb;
+	CsirguruLeg Leg;
+public:
+	void jump() {
+		//TODO random irány, fancy animation
+	}
+
+	void explode(Vector center) {
+		//TODO fling all body parts
+	}
+};
+
+class Bomb : public Object {
+public:
+	void explode() {
+		//loop through csirgurus
+	}
+};
+
+class Field {
+protected:
+	static const Vector AMBIENT_LIGHT;
+	static const Vector SUN_LIGHT;
+
+	Csirguru* csirgurus; //láncolt lista kéne
+public:
+	void addCsirguru(Vector pos) {
+
+	}
+
+	void dropBomb(Vector pos) {
+
+	}
+};
+
+const Vector Field::AMBIENT_LIGHT = Vector(0.1f, 0.1f, 0.1f);
+const Vector Field::SUN_LIGHT = Vector();
+
+Color image[Camera::XM*Camera::YM];
+
 void onInitialization() {
-	glViewport(0, 0, screenWidth, screenHeight);
-
-	// Peldakent keszitunk egy kepet az operativ memoriaba
-	for (int Y = 0; Y < screenHeight; Y++)
-		for (int X = 0; X < screenWidth; X++)
-			image[Y*screenWidth + X] = Color((float)X / screenWidth, (float)Y / screenHeight, 0);
-
+	glViewport(0, 0, Camera::XM, Camera::YM);
 }
 
-// Rajzolas, ha az alkalmazas ablak ervenytelenne valik, akkor ez a fuggveny hivodik meg
 void onDisplay() {
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);		// torlesi szin beallitasa
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // kepernyo torles
+	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
-														// ..
-
-														// Peldakent atmasoljuk a kepet a rasztertarba
-	glDrawPixels(screenWidth, screenHeight, GL_RGB, GL_FLOAT, image);
-	// Majd rajzolunk egy kek haromszoget
-	glColor3f(0, 0, 1);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-0.2f, -0.2f);
-	glVertex2f(0.2f, -0.2f);
-	glVertex2f(0.0f, 0.2f);
-	glEnd();
-
-	// ...
-
-	glutSwapBuffers();     				// Buffercsere: rajzolas vege
+	glutSwapBuffers();
 
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (lenyomas)
 void onKeyboard(unsigned char key, int x, int y) {
 	if (key == 'd') glutPostRedisplay(); 		// d beture rajzold ujra a kepet
 
+	switch (key)
+	{
+	case 'a':
+		//TODO move crosshair left
+		break;
+	case 'w':
+		//TODO move crosshair up
+		break;
+	case 'd':
+		//TODO move crosshair right
+		break;
+	case /*'y'*/'s':
+		//TODO move crosshair down
+		break;
+	case ' ':
+		//TODO drop da bomb
+		break;
+	default:
+		//nothing
+		break;
+	}
 }
 
-// Billentyuzet esemenyeket lekezelo fuggveny (felengedes)
 void onKeyboardUp(unsigned char key, int x, int y) {
 
 }
 
-// Eger esemenyeket lekezelo fuggveny
 void onMouse(int button, int state, int x, int y) {
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)   // A GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON illetve GLUT_DOWN / GLUT_UP
-		glutPostRedisplay(); 						 // Ilyenkor rajzold ujra a kepet
-}
-
-// Eger mozgast lekezelo fuggveny
-void onMouseMotion(int x, int y)
-{
 
 }
 
-// `Idle' esemenykezelo, jelzi, hogy az ido telik, az Idle esemenyek frekvenciajara csak a 0 a garantalt minimalis ertek
+void onMouseMotion(int x, int y) {
+
+}
+
 void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME);		// program inditasa ota eltelt ido
-
+	long time = glutGet(GLUT_ELAPSED_TIME);
 }
 
 // ...Idaig modosithatod
