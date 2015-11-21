@@ -80,6 +80,9 @@ struct Vector {
 	Vector operator/(float a) {
 		return Vector(x / a, y / a, z / a);
 	}
+	Vector operator+(float a) {
+		return Vector(x + a, y + a, z + a);
+	}
 	Vector operator+(const Vector& v) {
 		return Vector(x + v.x, y + v.y, z + v.z);
 	}
@@ -281,11 +284,46 @@ public:
 	}
 };
 
+class BezierCurve {
+public:
+	Vector points[10];
+	int size;
+
+	BezierCurve(int size) : size(size) {}
+
+private:
+	float B(int i, float t) {
+		int n = size - 1;
+
+		float choose = 1;
+
+		for (int j = 1; j <= i; j++)
+		{
+			choose *= (((float)n - (float)j + 1.0f) / (float)j);
+		}
+
+		return choose * powf(t, i) * powf(1 - t, n - i);
+	}
+
+public:
+	Vector getBezierCruvePoint(float t) {
+		Vector r = Vector();
+
+		for (int i = 0; i < size; i++)
+		{
+			r = r + (points[i] * B(i, t));
+		}
+
+		return r;	
+	}
+};
+
 //a CSIGURU teste
 class CsirguruBody : public Object {
 
 public:
 	CatmullRom spine = CatmullRom(5);
+	BezierCurve testBezier = BezierCurve(5);
 
 	CsirguruBody() {
 		spine.points[0] = Vector(0, 10, 0.5f);
@@ -299,6 +337,12 @@ public:
 		spine.t[2] = 2;
 		spine.t[3] = 3;
 		spine.t[4] = 4;
+
+		testBezier.points[0] = Vector(0, 10, 0.5f);
+		testBezier.points[1] = Vector(0, 7.5f, 2.5f);
+		testBezier.points[2] = Vector(0, 5, 3.5f);
+		testBezier.points[3] = Vector(0, 3, 7.5f);
+		testBezier.points[4] = Vector(0, 4, 11);
 	}
 
 	void draw() {
@@ -327,6 +371,18 @@ public:
 				glutSolidSphere(0.1, 8, 8);
 				glPopMatrix();
 			}
+		}
+
+		glColor3f(0, 1, 0);
+
+		for (float t = 0; t <= 1; t+=0.01f)
+		{
+			Vector curvePoint = testBezier.getBezierCruvePoint(t);
+
+			glPushMatrix();
+			glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
+			glutSolidSphere(0.1, 8, 8);
+			glPopMatrix();
 		}
 	}
 };
