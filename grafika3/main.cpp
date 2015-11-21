@@ -230,35 +230,108 @@ public:
 	}
 };
 
+class CatmullRom {
+public:
+	Vector points[10];
+	float t[10];
+	int size;
+
+	CatmullRom(int size) : size(size){}
+
+private:
+	Vector getVelocity(int i) {
+		if (i == 0 || i == size) {
+			return Vector();
+		}
+
+		return (((points[i + 1] - points[i]) / (t[i + 1] - t[i])) +
+			((points[i] - points[i - 1]) / (t[i] - t[i - 1]))) / 2;
+	}
+
+	Vector a3(int i) {
+		float deltaT = t[i + 1] - t[i];
+		return
+			(((points[i] - points[i + 1]) * 2) / powf(deltaT, 3)) +
+			((getVelocity(i + 1) + getVelocity(i)) / powf(deltaT, 2));
+	}
+
+	Vector a2(int i) {
+		float deltaT = t[i + 1] - t[i];
+		return
+			(((points[i + 1] - points[i]) * 3) / powf(deltaT, 2)) -
+			((getVelocity(i + 1) + getVelocity(i) * 2) / deltaT);
+	}
+
+	Vector a1(int i) {
+		return getVelocity(i);
+	}
+
+	Vector a0(int i) {
+		return points[i];
+	}
+
+public:
+	Vector getHermiteCurvePoint(int i, float t) {
+		float deltaT = t - (this->t)[i];
+		return
+			a3(i) * powf(deltaT, 3) +
+			a2(i) * powf(deltaT, 2) +
+			a1(i) * deltaT +
+			a0(i);
+	}
+};
+
 //a CSIGURU teste
 class CsirguruBody : public Object {
 
 public:
-	Vector spineCP[5];
-	float spineT[5];
+	CatmullRom spine = CatmullRom(5);
 
 	CsirguruBody() {
-		spineCP[0] = Vector(0, 20, 1);
-		spineCP[1] = Vector(0, 15, 5);
-		spineCP[2] = Vector(0, 10, 7);
-		spineCP[3] = Vector(0, 6, 15);
-		spineCP[4] = Vector(0, 8, 22);
+		spine.points[0] = Vector(0, 10, 0.5f);
+		spine.points[1] = Vector(0, 7.5f, 2.5f);
+		spine.points[2] = Vector(0, 5, 3.5f);
+		spine.points[3] = Vector(0, 3, 7.5f);
+		spine.points[4] = Vector(0, 4, 11);
+
+		spine.t[0] = 0;
+		spine.t[1] = 1;
+		spine.t[2] = 2;
+		spine.t[3] = 3;
+		spine.t[4] = 4;
 	}
 
 	void draw() {
-		glColor3f(0.9f, 0.9f, 0.9f);
+		glColor3f(1, 1, 1);
 
 		for (int i = 0; i < 5; i++)
 		{
 			glPushMatrix();
-			glTranslatef(spineCP[i].x, spineCP[i].y, spineCP[i].z);
-			glutSolidSphere(0.5, 16, 16);
+			glTranslatef(spine.points[i].x, spine.points[i].y, spine.points[i].z);
+			glutSolidSphere(0.2, 16, 16);
 			glPopMatrix();
+		}
+
+		glColor3f(1, 0, 0);
+
+		for (int i = 0; i < spine.size - 1; i++)
+		{
+			float step = (spine.t[i + 1] - spine.t[i]) / 50.0f;
+
+			for (float t = spine.t[i]; t < spine.t[i + 1]; t += step)
+			{
+				Vector curvePoint = spine.getHermiteCurvePoint(i, t);
+
+				glPushMatrix();
+				glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
+				glutSolidSphere(0.1, 8, 8);
+				glPopMatrix();
+			}
 		}
 	}
 };
 
-//a CSURGIRI lába
+//a CSIRGURU lába
 class CsirguruLeg : public Object {
 
 public:
