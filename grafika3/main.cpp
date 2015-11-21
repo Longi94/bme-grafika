@@ -132,7 +132,7 @@ struct Color {
 	Camera(Vector eye, Vector lookat, Vector up) :eye(eye), lookat(lookat), up(up) {}
 };*/
 
-enum ControllKeys { W, A, S, D, keys_num };
+enum ControllKeys { W, A, S, D, Q, E, keys_num };
 bool keys_down[keys_num];
 
 struct Camera {
@@ -160,6 +160,13 @@ struct Camera {
 		else if (keys_down[A] && !keys_down[D]) {
 			pos = pos - right * speed * dt;
 		}
+
+		if (keys_down[Q] && !keys_down[E]) {
+			pos = pos + Vector(0, 1, 0) * speed * dt;
+		}
+		else if (keys_down[E] && !keys_down[Q]) {
+			pos = pos - Vector(0, 1, 0) * speed * dt;
+		}
 	}
 
 	void updateDir(int dx, int dy) {
@@ -186,8 +193,11 @@ struct Camera {
 } camera;
 
 class Object {
-	Vector position;
 public:
+	Vector position;
+
+	virtual void draw() = 0;
+
 	void fling(Vector dir) {
 
 	}
@@ -196,43 +206,86 @@ public:
 //a CSIRGURU szeme
 class CsirguruEye : public Object {
 
+public:
+	void draw() {
+
+	}
 };
 
 //a CSIRGURU csőre
 class CsirguruBeak : public Object {
 
+public:
+	void draw() {
+
+	}
 };
 
 //a CSIRGURU taraja
 class CsirguruComb : public Object {
 
+public:
+	void draw() {
+
+	}
 };
 
 //a CSIGURU teste
 class CsirguruBody : public Object {
 
+public:
+	Vector spineCP[5];
+	float spineT[5];
+
+	CsirguruBody() {
+		spineCP[0] = Vector(0, 20, 1);
+		spineCP[1] = Vector(0, 15, 5);
+		spineCP[2] = Vector(0, 10, 7);
+		spineCP[3] = Vector(0, 6, 15);
+		spineCP[4] = Vector(0, 8, 22);
+	}
+
+	void draw() {
+		glColor3f(0.9f, 0.9f, 0.9f);
+
+		for (int i = 0; i < 5; i++)
+		{
+			glPushMatrix();
+			glTranslatef(spineCP[i].x, spineCP[i].y, spineCP[i].z);
+			glutSolidSphere(0.5, 16, 16);
+			glPopMatrix();
+		}
+	}
 };
 
 //a CSURGIRI lába
 class CsirguruLeg : public Object {
-	Object thigh, leg, foot, toe;
+
+public:
+	void draw() {
+
+	}
 };
 
 //sexy beast
 class Csirguru {
-protected:
+public:
 	CsirguruEye eyeLeft, eyeRight;
 	CsirguruBeak beak;
 	CsirguruBody body;
 	CsirguruComb comb;
 	CsirguruLeg Leg;
-public:
+
 	void jump() {
 		//TODO random irány, fancy animation
 	}
 
 	void explode(Vector center) {
 		//TODO fling all body parts
+	}
+
+	void draw() {
+
 	}
 };
 
@@ -250,11 +303,11 @@ public:
 
 		glColor3f(1, 1, 0);
 
-		float f = 0.1f;
+		float f = 1;
 
-		for (float i = 0; i < 10; i += f)
+		for (float i = 0; i < 100; i += f)
 		{
-			for (float j = 0; j < 10; j += f)
+			for (float j = 0; j < 100; j += f)
 			{
 				glVertex3f(i, 0, j);
 				glVertex3f(i + f, 0, j);
@@ -291,13 +344,23 @@ public:
 		lightColor[3] = 1;
 
 		lightPosition[0] = 0;
-		lightPosition[1] = 0;
-		lightPosition[2] = 1;
+		lightPosition[1] = 1;
+		lightPosition[2] = 0;
 		lightPosition[3] = 0;
 	}
 
-	void draw() {
+	void render() {
+
+		glPushMatrix();
 		field.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		CsirguruBody body = CsirguruBody();
+		body.position = Vector();
+		glTranslatef(body.position.x, body.position.y, body.position.z);
+		body.draw();
+		glPopMatrix();
 	}
 
 	void addCsirguru(Vector pos) {
@@ -324,17 +387,20 @@ void onInitialization() {
 
 	//Rendes 3d
 	glEnable(GL_DEPTH_TEST);
+	//Normál vaktorokat egység vektorokként kezelni
+	glEnable(GL_NORMALIZE);
+	//Világítás engedélyezése
+	glEnable(GL_LIGHTING);
+
 
 	glMatrixMode(GL_PROJECTION);
-	gluPerspective(60, 1, 0.2, 200);
+	gluPerspective(54, 1, 0.2, 200);
 	glMatrixMode(GL_MODELVIEW);
 	camera.applyMatrix();
 	/*gluLookAt(scene.camera.eye.x, scene.camera.eye.y, scene.camera.eye.z,
 		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
 		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);*/
 
-	//Világítás engedélyezése
-	glEnable(GL_LIGHTING);
 	//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
 	//Irányfényforrás
@@ -358,15 +424,14 @@ void onDisplay() {
 	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
 	glEnable(GL_LIGHT0);
 
-	scene.draw();
+	scene.render();
 
-	glBegin(GL_QUADS);
-	glColor3f(0, 1, 1);
-	glVertex3f(4, 1, 4);
-	glVertex3f(4, 1, 6);
-	glVertex3f(6, 1, 6);
-	glVertex3f(6, 1, 4);
-	glEnd();
+	//Árnyékolás
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHT1);
+
+	//4x4 mtx, árnyék mtx
+	//Síkra vetett árnyékok
 
 	glutSwapBuffers();
 
@@ -408,6 +473,12 @@ void onKeyboard(unsigned char key, int x, int y) {
 	case 'd': case 'D':
 		keys_down[D] = true;
 		break;
+	case 'q': case 'Q':
+		keys_down[Q] = true;
+		break;
+	case 'e': case 'E':
+		keys_down[E] = true;
+		break;
 	}
 }
 
@@ -424,6 +495,12 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 		break;
 	case 'd': case 'D':
 		keys_down[D] = false;
+		break;
+	case 'q': case 'Q':
+		keys_down[Q] = false;
+		break;
+	case 'e': case 'E':
+		keys_down[E] = false;
 		break;
 	}
 }
