@@ -195,6 +195,52 @@ struct Camera {
 	}
 } camera;
 
+class Cylinder {
+	float r, m;
+	int slices;
+
+public:
+	Cylinder(float r, float m, int slices): r(r), m(m), slices(slices) {}
+
+	void draw() {
+		glBegin(GL_TRIANGLE_FAN);
+		glNormal3f(0, -1, 0);
+		glVertex3f(0, 0, 0);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = 2*M_PI / slices * i;
+
+			glNormal3f(0, -1, 0);
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+		}
+		glEnd();
+
+
+		glBegin(GL_TRIANGLE_FAN);
+		glNormal3f(0, 1, 0);
+		glVertex3f(0, m, 0);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = 2 * M_PI / slices * i;
+
+			glNormal3f(0, 1, 0);
+			glVertex3f(sinf(angle) * r, m, cosf(angle) * r);
+		}
+		glEnd();
+
+		glBegin(GL_TRIANGLE_STRIP);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = 2 * M_PI / slices * i;
+
+			glNormal3f(sinf(angle), 0, cosf(angle));
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+			glVertex3f(sinf(angle) * r, m, cosf(angle) * r);
+		}
+		glEnd();
+	}
+};
+
 class Object {
 public:
 	Vector position;
@@ -431,6 +477,7 @@ public:
 		glBegin(GL_QUADS);
 
 		glColor3f(1, 1, 0);
+		glNormal3f(0, 1, 0);
 
 		float f = 1;
 
@@ -554,6 +601,15 @@ void onDisplay() {
 	glEnable(GL_LIGHT0);
 
 	scene.render();
+
+	glPushMatrix();
+	glColor3f(1, 1, 1);
+	Cylinder cylinder(2, 10, 16);
+
+	glTranslatef(10, 5, 10);
+	glRotatef(30, 1, 1, 1);
+	cylinder.draw();
+	glPopMatrix();
 
 	//Árnyékolás
 	glDisable(GL_LIGHT0);
