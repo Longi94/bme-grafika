@@ -203,6 +203,7 @@ public:
 	Cylinder(float r, float m, int slices): r(r), m(m), slices(slices) {}
 
 	void draw() {
+		//Bottom face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, -1, 0);
 		glVertex3f(0, 0, 0);
@@ -215,7 +216,7 @@ public:
 		}
 		glEnd();
 
-
+		//Top face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, 1, 0);
 		glVertex3f(0, m, 0);
@@ -228,6 +229,7 @@ public:
 		}
 		glEnd();
 
+		//Sides
 		glBegin(GL_TRIANGLE_STRIP);
 		for (float i = 0; i <= slices; i++)
 		{
@@ -238,6 +240,112 @@ public:
 			glVertex3f(sinf(angle) * r, m, cosf(angle) * r);
 		}
 		glEnd();
+	}
+};
+
+class CatmullRom {
+	Vector points[10];
+	float t[10];
+	int size;
+
+	Vector getVelocity(int i) {
+		if (i == 0 || i == size) {
+			return Vector();
+		}
+
+		return (((points[i + 1] - points[i]) / (t[i + 1] - t[i])) +
+			((points[i] - points[i - 1]) / (t[i] - t[i - 1]))) / 2;
+	}
+
+	Vector a3(int i) {
+		float deltaT = t[i + 1] - t[i];
+		return
+			(((points[i] - points[i + 1]) * 2) / powf(deltaT, 3)) +
+			((getVelocity(i + 1) + getVelocity(i)) / powf(deltaT, 2));
+	}
+
+	Vector a2(int i) {
+		float deltaT = t[i + 1] - t[i];
+		return
+			(((points[i + 1] - points[i]) * 3) / powf(deltaT, 2)) -
+			((getVelocity(i + 1) + getVelocity(i) * 2) / deltaT);
+	}
+
+	Vector a1(int i) {
+		return getVelocity(i);
+	}
+
+	Vector a0(int i) {
+		return points[i];
+	}
+
+public:
+	CatmullRom() {
+		size = 0;
+	}
+
+	void addControlPoint(Vector point, float t) {
+		if (size == 10) 
+			return;
+
+		this->points[size] = point;
+		this->t[size++] = t;
+	}
+
+	Vector getHermiteCurvePoint(int i, float t) {
+		float deltaT = t - (this->t)[i];
+		return
+			a3(i) * powf(deltaT, 3) +
+			a2(i) * powf(deltaT, 2) +
+			a1(i) * deltaT +
+			a0(i);
+	}
+
+	int getSize() { return size; }
+
+	float getT(int i) { return t[i]; }
+
+	Vector getPoint(int i) { return points[i]; }
+};
+
+class BezierCurve {
+	Vector points[10];
+	int size;
+
+	float B(int i, float t) {
+		int n = size - 1;
+
+		float choose = 1;
+
+		for (int j = 1; j <= i; j++)
+		{
+			choose *= (((float)n - (float)j + 1.0f) / (float)j);
+		}
+
+		return choose * powf(t, i) * powf(1 - t, n - i);
+	}
+
+public:
+	BezierCurve() {
+		size = 0;
+	}
+
+	void addControlPoint(Vector point) {
+		if (size == 10)
+			return;
+
+		this->points[size++] = point;
+	}
+
+	Vector getBezierCruvePoint(float t) {
+		Vector r = Vector();
+
+		for (int i = 0; i < size; i++)
+		{
+			r = r + (points[i] * B(i, t));
+		}
+
+		return r;
 	}
 };
 
@@ -279,116 +387,25 @@ public:
 	}
 };
 
-class CatmullRom {
-public:
-	Vector points[10];
-	float t[10];
-	int size;
-
-	CatmullRom(int size) : size(size){}
-
-private:
-	Vector getVelocity(int i) {
-		if (i == 0 || i == size) {
-			return Vector();
-		}
-
-		return (((points[i + 1] - points[i]) / (t[i + 1] - t[i])) +
-			((points[i] - points[i - 1]) / (t[i] - t[i - 1]))) / 2;
-	}
-
-	Vector a3(int i) {
-		float deltaT = t[i + 1] - t[i];
-		return
-			(((points[i] - points[i + 1]) * 2) / powf(deltaT, 3)) +
-			((getVelocity(i + 1) + getVelocity(i)) / powf(deltaT, 2));
-	}
-
-	Vector a2(int i) {
-		float deltaT = t[i + 1] - t[i];
-		return
-			(((points[i + 1] - points[i]) * 3) / powf(deltaT, 2)) -
-			((getVelocity(i + 1) + getVelocity(i) * 2) / deltaT);
-	}
-
-	Vector a1(int i) {
-		return getVelocity(i);
-	}
-
-	Vector a0(int i) {
-		return points[i];
-	}
-
-public:
-	Vector getHermiteCurvePoint(int i, float t) {
-		float deltaT = t - (this->t)[i];
-		return
-			a3(i) * powf(deltaT, 3) +
-			a2(i) * powf(deltaT, 2) +
-			a1(i) * deltaT +
-			a0(i);
-	}
-};
-
-class BezierCurve {
-public:
-	Vector points[10];
-	int size;
-
-	BezierCurve(int size) : size(size) {}
-
-private:
-	float B(int i, float t) {
-		int n = size - 1;
-
-		float choose = 1;
-
-		for (int j = 1; j <= i; j++)
-		{
-			choose *= (((float)n - (float)j + 1.0f) / (float)j);
-		}
-
-		return choose * powf(t, i) * powf(1 - t, n - i);
-	}
-
-public:
-	Vector getBezierCruvePoint(float t) {
-		Vector r = Vector();
-
-		for (int i = 0; i < size; i++)
-		{
-			r = r + (points[i] * B(i, t));
-		}
-
-		return r;	
-	}
-};
-
 //a CSIGURU teste
 class CsirguruBody : public Object {
 
 public:
-	CatmullRom spine = CatmullRom(5);
-	BezierCurve testBezier = BezierCurve(5);
+	CatmullRom spine;
+	BezierCurve testBezier;
 
 	CsirguruBody() {
-		spine.points[0] = Vector(0, 10, 0.5f);
-		spine.points[1] = Vector(0, 7.5f, 2.5f);
-		spine.points[2] = Vector(0, 5, 3.5f);
-		spine.points[3] = Vector(0, 3, 7.5f);
-		spine.points[4] = Vector(0, 4, 11);
+		spine.addControlPoint(Vector(0, 10, 0.5f), 0);
+		spine.addControlPoint(Vector(0, 7.5f, 2.5f), 1);
+		spine.addControlPoint(Vector(0, 5, 3.5f), 2);
+		spine.addControlPoint(Vector(0, 3, 7.5f), 3);
+		spine.addControlPoint(Vector(0, 4, 11), 4);
 
-		spine.t[0] = 0;
-		spine.t[1] = 1;
-		spine.t[2] = 2;
-		spine.t[3] = 3;
-		spine.t[4] = 4;
-
-		testBezier.points[0] = Vector(0, 10, 0.5f);
-		testBezier.points[1] = Vector(0, 7.5f, 2.5f);
-		testBezier.points[2] = Vector(0, 5, 3.5f);
-		testBezier.points[3] = Vector(0, 3, 7.5f);
-		testBezier.points[4] = Vector(0, 4, 11);
+		testBezier.addControlPoint(Vector(0, 10, 0.5f));
+		testBezier.addControlPoint(Vector(0, 7.5f, 2.5f));
+		testBezier.addControlPoint(Vector(0, 5, 3.5f));
+		testBezier.addControlPoint(Vector(0, 3, 7.5f));
+		testBezier.addControlPoint(Vector(0, 4, 11));
 	}
 
 	void draw() {
@@ -397,18 +414,18 @@ public:
 		for (int i = 0; i < 5; i++)
 		{
 			glPushMatrix();
-			glTranslatef(spine.points[i].x, spine.points[i].y, spine.points[i].z);
+			glTranslatef(spine.getPoint(i).x, spine.getPoint(i).y, spine.getPoint(i).z);
 			glutSolidSphere(0.2, 16, 16);
 			glPopMatrix();
 		}
 
 		glColor3f(1, 0, 0);
 
-		for (int i = 0; i < spine.size - 1; i++)
+		for (int i = 0; i < spine.getSize() - 1; i++)
 		{
-			float step = (spine.t[i + 1] - spine.t[i]) / 50.0f;
+			float step = (spine.getT(i + 1) - spine.getT(i)) / 50.0f;
 
-			for (float t = spine.t[i]; t < spine.t[i + 1]; t += step)
+			for (float t = spine.getT(i); t < spine.getT(i + 1); t += step)
 			{
 				Vector curvePoint = spine.getHermiteCurvePoint(i, t);
 
