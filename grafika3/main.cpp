@@ -243,6 +243,46 @@ public:
 	}
 };
 
+class Cone {
+	float r, m;
+	int slices;
+
+public:
+	Cone(float r, float m, int slices): r(r), m(m), slices(slices) {}
+
+	void draw() {
+		float a = cosf(atanf(m / r)) * r;
+
+		//Bottom face
+		glBegin(GL_TRIANGLE_FAN);
+		glNormal3f(0, -1, 0);
+		glVertex3f(0, 0, 0);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = 2 * M_PI / slices * i;
+
+			glNormal3f(0, -1, 0);
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+		}
+		glEnd();
+
+		//Sides
+		glBegin(GL_TRIANGLE_STRIP);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = 2 * M_PI / slices * i;
+
+			Vector vr = Vector(sinf(angle) * r, 0, cosf(angle) * r);
+			Vector normal = vr + (Vector(0, m, 0) - vr).norm() * a;
+
+			glNormal3f(normal.x, normal.y, normal.z);
+			glVertex3f(0, m, 0);
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+		}
+		glEnd();
+	}
+};
+
 class CatmullRom {
 	Vector points[10];
 	float t[10];
@@ -280,9 +320,7 @@ class CatmullRom {
 	}
 
 public:
-	CatmullRom() {
-		size = 0;
-	}
+	CatmullRom(): size(0) {}
 
 	void addControlPoint(Vector point, float t) {
 		if (size == 10) 
@@ -326,9 +364,7 @@ class BezierCurve {
 	}
 
 public:
-	BezierCurve() {
-		size = 0;
-	}
+	BezierCurve() : size(0) {}
 
 	void addControlPoint(Vector point) {
 		if (size == 10)
@@ -619,13 +655,22 @@ void onDisplay() {
 
 	scene.render();
 
+	//Test cylinder
 	glPushMatrix();
 	glColor3f(1, 1, 1);
 	Cylinder cylinder(2, 10, 16);
-
 	glTranslatef(10, 5, 10);
 	glRotatef(30, 1, 1, 1);
 	cylinder.draw();
+	glPopMatrix();
+
+	//Test cone
+	glPushMatrix();
+	glColor3f(0, 0, 1);
+	Cone cone(2, 5, 16);
+	glTranslatef(10, 5, 20);
+	glRotatef(30, 1, 1, 1);
+	cone.draw();
 	glPopMatrix();
 
 	//Árnyékolás
