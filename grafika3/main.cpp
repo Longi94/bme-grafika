@@ -283,6 +283,39 @@ public:
 	}
 };
 
+class Sphere {
+	float r;
+	int slices, stacks;
+
+public:
+	Sphere(float r, int slices, int stacks) : r(r), slices(slices), stacks(stacks) {}
+
+	void draw() {
+		glBegin(GL_TRIANGLE_STRIP);
+
+		for (int i = 0; i < stacks; i++)
+		{
+			float b1 = M_PI / stacks * i - M_PI / 2;
+			float b2 = M_PI / stacks * (i+1) - M_PI / 2;
+
+			for (int j = 0; j < slices; j++)
+			{
+				float a = 2 * M_PI / slices * j;
+				Vector point1 = Vector(sinf(a) * cosf(b1) * r, sinf(b1) * r, cosf(a) * cosf(b1) * r);
+				Vector point2 = Vector(sinf(a) * cosf(b2) * r, sinf(b2) * r, cosf(a) * cosf(b2) * r);
+
+				glNormal3f(point1.x, point1.y, point1.z);
+				glVertex3f(point1.x, point1.y, point1.z);
+
+				glNormal3f(point2.x, point2.y, point2.z);
+				glVertex3f(point2.x, point2.y, point2.z);
+			}
+		}
+
+		glEnd();
+	}
+};
+
 class CatmullRom {
 	Vector points[10];
 	float t[10];
@@ -671,6 +704,14 @@ void onDisplay() {
 	glTranslatef(10, 5, 20);
 	glRotatef(30, 1, 1, 1);
 	cone.draw();
+	glPopMatrix();
+
+	//Test sphere
+	glPushMatrix();
+	glColor3f(0, 1, 1);
+	Sphere shpere(2.5f, 16, 16);
+	glTranslatef(20, 5, 10);
+	shpere.draw();
 	glPopMatrix();
 
 	//Árnyékolás
