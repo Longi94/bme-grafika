@@ -591,7 +591,7 @@ protected:
 	Field field;
 public:
 	float lightColor[4];
-	float lightPosition[4];
+	float lightDir[4];
 	//Camera camera;
 
 	Scene() {
@@ -605,13 +605,22 @@ public:
 		lightColor[2] = 1;
 		lightColor[3] = 1;
 
-		lightPosition[0] = 0;
-		lightPosition[1] = 1;
-		lightPosition[2] = 0;
-		lightPosition[3] = 0;
+		lightDir[0] = 0;
+		lightDir[1] = 1;
+		lightDir[2] = 0;
+		lightDir[3] = 0;
 	}
 
 	void render() {
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+		camera.applyMatrix();
+
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, lightColor);
+		glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
+		glEnable(GL_LIGHT0);
 
 		glPushMatrix();
 		field.draw();
@@ -622,6 +631,73 @@ public:
 		body.position = Vector();
 		glTranslatef(body.position.x, body.position.y, body.position.z);
 		body.draw();
+		glPopMatrix();
+
+		//Test cylinder
+		glPushMatrix();
+		glColor3f(1, 1, 1);
+		Cylinder cylinder(2, 10, 16);
+		glTranslatef(10, 5, 10);
+		glRotatef(30, 1, 1, 1);
+		cylinder.draw();
+		glPopMatrix();
+
+		//Test cone
+		glPushMatrix();
+		glColor3f(0, 0, 1);
+		Cone cone(2, 5, 16);
+		glTranslatef(10, 5, 20);
+		glRotatef(30, 1, 1, 1);
+		cone.draw();
+		glPopMatrix();
+
+		//Test sphere
+		glPushMatrix();
+		glColor3f(0, 1, 1);
+		Sphere shpere(2.5f, 16, 16);
+		glTranslatef(20, 5, 10);
+		shpere.draw();
+		glPopMatrix();
+
+		//4x4 mtx, árnyék mtx
+		//Síkra vetett árnyékok
+		float shadow[4][4] = {
+			1, 0, 0, 0,
+			-lightDir[0] / lightDir[1], 0, -lightDir[2] / lightDir[1], 0,
+			0, 0, 1, 0,
+			0, 0.001f, 0, 1
+		};
+		glMultMatrixf(&shadow[0][0]);
+
+		//Árnyékolás
+		glDisable(GL_LIGHT0);
+		glDisable(GL_LIGHT1);
+
+		glColor3f(0, 0, 0);
+
+		glPushMatrix();
+		glTranslatef(body.position.x, body.position.y, body.position.z);
+		body.draw();
+		glPopMatrix();
+
+		glColor3f(0, 0, 0);
+		//Test cylinder
+		glPushMatrix();
+		glTranslatef(10, 5, 10);
+		glRotatef(30, 1, 1, 1);
+		cylinder.draw();
+		glPopMatrix();
+
+		//Test cone
+		glPushMatrix();
+		glTranslatef(10, 5, 20);
+		glRotatef(30, 1, 1, 1);
+		cone.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(20, 5, 10);
+		shpere.draw();
 		glPopMatrix();
 	}
 
@@ -667,7 +743,7 @@ void onInitialization() {
 	glEnable(GL_COLOR_MATERIAL);
 	//Irányfényforrás
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
-	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
+	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightDir);
 	glEnable(GL_LIGHT0);
 
 	glEnable(GL_SMOOTH);
@@ -677,49 +753,7 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	camera.applyMatrix();
-
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
-	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightPosition);
-	glEnable(GL_LIGHT0);
-
 	scene.render();
-
-	//Test cylinder
-	glPushMatrix();
-	glColor3f(1, 1, 1);
-	Cylinder cylinder(2, 10, 16);
-	glTranslatef(10, 5, 10);
-	glRotatef(30, 1, 1, 1);
-	cylinder.draw();
-	glPopMatrix();
-
-	//Test cone
-	glPushMatrix();
-	glColor3f(0, 0, 1);
-	Cone cone(2, 5, 16);
-	glTranslatef(10, 5, 20);
-	glRotatef(30, 1, 1, 1);
-	cone.draw();
-	glPopMatrix();
-
-	//Test sphere
-	glPushMatrix();
-	glColor3f(0, 1, 1);
-	Sphere shpere(2.5f, 16, 16);
-	glTranslatef(20, 5, 10);
-	shpere.draw();
-	glPopMatrix();
-
-	//Árnyékolás
-	glDisable(GL_LIGHT0);
-	glDisable(GL_LIGHT1);
-
-	//4x4 mtx, árnyék mtx
-	//Síkra vetett árnyékok
 
 	glutSwapBuffers();
 
