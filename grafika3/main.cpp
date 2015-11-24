@@ -195,11 +195,10 @@ struct Camera {
 	}
 } camera;
 
-class Cylinder {
+struct Cylinder {
 	float r, m;
 	int slices;
 
-public:
 	Cylinder(float r, float m, int slices): r(r), m(m), slices(slices) {}
 
 	void draw() {
@@ -243,11 +242,10 @@ public:
 	}
 };
 
-class Cone {
+struct Cone {
 	float r, m;
 	int slices;
 
-public:
 	Cone(float r, float m, int slices): r(r), m(m), slices(slices) {}
 
 	void draw() {
@@ -283,11 +281,10 @@ public:
 	}
 };
 
-class Sphere {
+struct Sphere {
 	float r;
 	int slices, stacks;
 
-public:
 	Sphere(float r, int slices, int stacks) : r(r), slices(slices), stacks(stacks) {}
 
 	void draw() {
@@ -316,11 +313,37 @@ public:
 	}
 };
 
-class CatmullRom {
+struct CatmullRom {
 	Vector points[10];
 	float t[10];
 	int size;
 
+	CatmullRom() : size(0) {}
+
+	void addControlPoint(Vector point, float t) {
+		if (size == 10) 
+			return;
+
+		this->points[size] = point;
+		this->t[size++] = t;
+	}
+
+	Vector getHermiteCurvePoint(int i, float t) {
+		float deltaT = t - (this->t)[i];
+		return
+			a3(i) * powf(deltaT, 3) +
+			a2(i) * powf(deltaT, 2) +
+			a1(i) * deltaT +
+			a0(i);
+	}
+
+	int getSize() { return size; }
+
+	float getT(int i) { return t[i]; }
+
+	Vector getPoint(int i) { return points[i]; }
+
+private:
 	Vector getVelocity(int i) {
 		if (i == 0 || i == size) {
 			return Vector();
@@ -351,52 +374,12 @@ class CatmullRom {
 	Vector a0(int i) {
 		return points[i];
 	}
-
-public:
-	CatmullRom(): size(0) {}
-
-	void addControlPoint(Vector point, float t) {
-		if (size == 10) 
-			return;
-
-		this->points[size] = point;
-		this->t[size++] = t;
-	}
-
-	Vector getHermiteCurvePoint(int i, float t) {
-		float deltaT = t - (this->t)[i];
-		return
-			a3(i) * powf(deltaT, 3) +
-			a2(i) * powf(deltaT, 2) +
-			a1(i) * deltaT +
-			a0(i);
-	}
-
-	int getSize() { return size; }
-
-	float getT(int i) { return t[i]; }
-
-	Vector getPoint(int i) { return points[i]; }
 };
 
-class BezierCurve {
+struct BezierCurve {
 	Vector points[10];
 	int size;
 
-	float B(int i, float t) {
-		int n = size - 1;
-
-		float choose = 1;
-
-		for (int j = 1; j <= i; j++)
-		{
-			choose *= (((float)n - (float)j + 1.0f) / (float)j);
-		}
-
-		return choose * powf(t, i) * powf(1 - t, n - i);
-	}
-
-public:
 	BezierCurve() : size(0) {}
 
 	void addControlPoint(Vector point) {
@@ -416,10 +399,23 @@ public:
 
 		return r;
 	}
+
+private:
+	float B(int i, float t) {
+		int n = size - 1;
+
+		float choose = 1;
+
+		for (int j = 1; j <= i; j++)
+		{
+			choose *= (((float)n - (float)j + 1.0f) / (float)j);
+		}
+
+		return choose * powf(t, i) * powf(1 - t, n - i);
+	}
 };
 
-class Object {
-public:
+struct Object {
 	Vector position;
 
 	virtual void draw() = 0;
@@ -430,38 +426,33 @@ public:
 };
 
 //a CSIRGURU szeme
-class CsirguruEye : public Object {
+struct CsirguruEye : public Object {
 
-public:
 	void draw() {
 
 	}
 };
 
 //a CSIRGURU csőre
-class CsirguruBeak : public Object {
+struct CsirguruBeak : public Object {
 
-public:
 	void draw() {
 
 	}
 };
 
 //a CSIRGURU taraja
-class CsirguruComb : public Object {
+struct CsirguruComb : public Object {
 
-public:
 	void draw() {
 
 	}
 };
 
 //a CSIGURU teste
-class CsirguruBody : public Object {
+struct CsirguruBody : public Object {
 
-public:
 	CatmullRom spine;
-	BezierCurve testBezier;
 
 	CsirguruBody() {
 		spine.addControlPoint(Vector(0, 10, 0.5f), 0);
@@ -469,12 +460,6 @@ public:
 		spine.addControlPoint(Vector(0, 5, 3.5f), 2);
 		spine.addControlPoint(Vector(0, 3, 7.5f), 3);
 		spine.addControlPoint(Vector(0, 4, 11), 4);
-
-		testBezier.addControlPoint(Vector(0, 10, 0.5f));
-		testBezier.addControlPoint(Vector(0, 7.5f, 2.5f));
-		testBezier.addControlPoint(Vector(0, 5, 3.5f));
-		testBezier.addControlPoint(Vector(0, 3, 7.5f));
-		testBezier.addControlPoint(Vector(0, 4, 11));
 	}
 
 	void draw() {
@@ -504,33 +489,19 @@ public:
 				glPopMatrix();
 			}
 		}
-
-		glColor3f(0, 1, 0);
-
-		for (float t = 0; t <= 1; t+=0.01f)
-		{
-			Vector curvePoint = testBezier.getBezierCruvePoint(t);
-
-			glPushMatrix();
-			glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
-			glutSolidSphere(0.1, 8, 8);
-			glPopMatrix();
-		}
 	}
 };
 
 //a CSIRGURU lába
-class CsirguruLeg : public Object {
+struct CsirguruLeg : public Object {
 
-public:
 	void draw() {
 
 	}
 };
 
 //sexy beast
-class Csirguru {
-public:
+struct Csirguru {
 	CsirguruEye eyeLeft, eyeRight;
 	CsirguruBeak beak;
 	CsirguruBody body;
@@ -550,15 +521,13 @@ public:
 	}
 };
 
-class Bomb : public Object {
-public:
+struct Bomb : public Object {
 	void explode() {
 		//loop through csirgurus
 	}
 };
 
-class Field {
-public:
+struct Field {
 	void draw() {
 		glBegin(GL_QUADS);
 
@@ -582,14 +551,13 @@ public:
 	}
 };
 
-class Scene {
-protected:
+struct Scene {
 	static const Vector SUN_LIGHT;
 
 	Csirguru* csirgurus; //láncolt lista kéne
 
 	Field field;
-public:
+
 	float lightColor[4];
 	float lightDir[4];
 	//Camera camera;
@@ -672,13 +640,6 @@ public:
 		//Árnyékolás
 		glDisable(GL_LIGHT0);
 		glDisable(GL_LIGHT1);
-
-		glColor3f(0, 0, 0);
-
-		glPushMatrix();
-		glTranslatef(body.position.x, body.position.y, body.position.z);
-		body.draw();
-		glPopMatrix();
 
 		glColor3f(0, 0, 0);
 		//Test cylinder
