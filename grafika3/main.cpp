@@ -341,12 +341,26 @@ struct CatmullRom {
 	}
 
 	Vector getHermiteCurvePoint(int i, float t) {
+		if (t > (this->t)[i + 1]) {
+			i++;
+		}
 		float deltaT = t - (this->t)[i];
 		return
 			a3(i) * powf(deltaT, 3) +
 			a2(i) * powf(deltaT, 2) +
 			a1(i) * deltaT +
 			a0(i);
+	}
+
+	Vector getDerivative(int i, float t) {
+		if (t > (this->t)[i + 1]) {
+			i++;
+		}
+		float deltaT = t - (this->t)[i];
+		return
+			a3(i) * 3 * powf(deltaT, 2) +
+			a2(i) * 2 * deltaT +
+			a1(i);
 	}
 
 	int getSize() { return size; }
@@ -412,6 +426,20 @@ struct BezierCurve {
 		return r;
 	}
 
+	Vector getDerivative(float t) {
+		if (t == 0) {
+			t += 0.0001f;
+		}
+		Vector r = Vector();
+
+		for (int i = 0; i < size; i++)
+		{
+			r = r + (points[i] * dB(i, t));
+		}
+
+		return r;
+	}
+
 private:
 	float B(int i, float t) {
 		int n = size - 1;
@@ -424,6 +452,19 @@ private:
 		}
 
 		return choose * powf(t, i) * powf(1 - t, n - i);
+	}
+
+	float dB(int i, float t) {
+		int n = size - 1;
+
+		float choose = 1;
+
+		for (int j = 1; j <= i; j++)
+		{
+			choose *= (((float)n - (float)j + 1.0f) / (float)j);
+		}
+
+		return choose * (i*powf(t, i - 1) * powf(1 - t, n - i) - powf(t, i) * powf(1 - t, n - i - 1) * (n - i));
 	}
 };
 
@@ -499,40 +540,78 @@ struct CsirguruBody : public Object {
 	CatmullRom spine;
 
 	CsirguruBody() {
-		spine.addControlPoint(Vector(0, 10, 0.5f), 0);
-		spine.addControlPoint(Vector(0, 7.5f, 2.5f), 1);
-		spine.addControlPoint(Vector(0, 5, 3.5f), 2);
-		spine.addControlPoint(Vector(0, 3, 7.5f), 3);
-		spine.addControlPoint(Vector(0, 4, 11), 4);
+		spine.addControlPoint(Vector(0, 0, 0), 0);
+		spine.addControlPoint(Vector(0, -0.5f, -0.1f), 1);
+		spine.addControlPoint(Vector(0, -1.3f, -0.4f), 2);
+		spine.addControlPoint(Vector(0, -1.4f, -1.4f), 3);
+		spine.addControlPoint(Vector(0, -0.5f, -1.8f), 4);
 	}
 
-	void draw() {
-		glColor3f(1, 1, 1);
+	void draw() { 
 
-		for (int i = 0; i < 5; i++)
-		{
-			glPushMatrix();
-			glTranslatef(spine.getPoint(i).x, spine.getPoint(i).y, spine.getPoint(i).z);
-			glutSolidSphere(0.2, 16, 16);
-			glPopMatrix();
-		}
+		glColor3f(0.9f, 0.9f, 0.9f);
 
-		glColor3f(1, 0, 0);
-
+		glBegin(GL_TRIANGLE_STRIP);
 		for (int i = 0; i < spine.getSize() - 1; i++)
 		{
-			float step = (spine.getT(i + 1) - spine.getT(i)) / 50.0f;
+
+			float step = (spine.getT(i + 1) - spine.getT(i)) / 20.0f;
 
 			for (float t = spine.getT(i); t < spine.getT(i + 1); t += step)
 			{
-				Vector curvePoint = spine.getHermiteCurvePoint(i, t);
+				//Az aktuális és a következő catmull-rom pont
+				// TODO optimalizálni, így minden ponott kétszer számol ki...
+				Vector curve1 = spine.getHermiteCurvePoint(i, t);
+				Vector curve2 = spine.getHermiteCurvePoint(i, t + step);
 
-				glPushMatrix();
-				glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
-				glutSolidSphere(0.1, 8, 8);
-				glPopMatrix();
+				//Deriváljuk a catmull-romot
+				Vector deriv1 = spine.getDerivative(i, t);
+				Vector normal1 = Vector(deriv1.x, deriv1.z, -deriv1.y);
+
+				Vector deriv2 = spine.getDerivative(i, t + step);
+				Vector normal2 = Vector(deriv2.x, deriv2.z, -deriv2.y);
+
+				//Léterhozzuk a bézier görbéket
+				//Ezt is optimalizálni köll
+				BezierCurve bcurve1 = BezierCurve();
+				Vector cp1 = curve1 + normal1.norm() * 1;
+
+				bcurve1.addControlPoint(curve1);
+				bcurve1.addControlPoint(Vector(curve1.x - 0.5f, curve1.y, curve1.z));
+				bcurve1.addControlPoint(Vector(curve1.x - 0.5f, cp1.y, cp1.z));
+				bcurve1.addControlPoint(Vector(curve1.x + 0.5f, cp1.y, cp1.z));
+				bcurve1.addControlPoint(Vector(curve1.x + 0.5f, curve1.y, curve1.z));
+				bcurve1.addControlPoint(curve1);
+
+				BezierCurve bcurve2 = BezierCurve();
+				Vector cp2 = curve2 + normal2.norm() * 1;
+
+				bcurve2.addControlPoint(curve2);
+				bcurve2.addControlPoint(Vector(curve2.x - 0.5f, curve2.y, curve2.z));
+				bcurve2.addControlPoint(Vector(curve2.x - 0.5f, cp2.y, cp2.z));
+				bcurve2.addControlPoint(Vector(curve2.x + 0.5f, cp2.y, cp2.z));
+				bcurve2.addControlPoint(Vector(curve2.x + 0.5f, curve2.y, curve2.z));
+				bcurve2.addControlPoint(curve2);
+
+				for (float tb = 0; tb <= 1; tb += 1.0f / 50.0f)
+				{
+					Vector curvePoint1 = bcurve1.getBezierCruvePoint(tb);
+					Vector curvePoint2 = bcurve2.getBezierCruvePoint(tb);
+
+					Vector normal1 = bcurve1.getDerivative(tb) % (curvePoint1 - curvePoint2);
+					Vector normal2 = (curvePoint2 - curvePoint1) % bcurve2.getDerivative(tb);
+
+					glNormal3f(normal1.x, normal1.y, normal1.z);
+					glVertex3f(curvePoint1.x, curvePoint1.y, curvePoint1.z);
+
+					glNormal3f(normal2.x, normal2.y, normal2.z);
+					glVertex3f(curvePoint2.x, curvePoint2.y, curvePoint2.z);
+				}
+
 			}
 		}
+
+		glEnd();
 	}
 };
 
@@ -588,6 +667,14 @@ struct Csirguru {
 	}
 
 	void draw() {
+
+		body.position = Vector(sinf(angle + M_PI) * HEAD_RADIUS, 0, cosf(angle + M_PI) * HEAD_RADIUS);
+		glPushMatrix();
+		glTranslatef(body.position.x, body.position.y, body.position.z);
+		body.draw();
+		glPopMatrix();
+
+
 		glPushMatrix();
 		glTranslatef(head.position.x, head.position.y, head.position.z);
 		head.draw();
@@ -757,13 +844,6 @@ struct Scene {
 		testCs.draw();
 		glPopMatrix();
 
-		glPushMatrix();
-		CsirguruBody body = CsirguruBody();
-		body.position = Vector();
-		glTranslatef(body.position.x, body.position.y, body.position.z);
-		body.draw();
-		glPopMatrix();
-
 		//Test cylinder
 		glPushMatrix();
 		glColor3f(1, 1, 1);
@@ -841,6 +921,8 @@ Scene scene;
 
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	scene = Scene();
 	scene.init();
