@@ -124,6 +124,14 @@ struct Color {
 	}
 };
 
+float toRad(float deg) {
+	return deg * (M_PI / 180.0f);
+}
+
+float toDeg(float rad) {
+	return rad * (180.0f / M_PI);
+}
+
 /*struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
@@ -246,7 +254,9 @@ struct Cone {
 	float r, m;
 	int slices;
 
-	Cone(float r, float m, int slices): r(r), m(m), slices(slices) {}
+	Cone() : r(1), m(1), slices(16) {}
+
+	Cone(float r, float m, int slices) : r(r), m(m), slices(slices) {}
 
 	void draw() {
 		float a = cosf(atanf(m / r)) * r;
@@ -284,6 +294,8 @@ struct Cone {
 struct Sphere {
 	float r;
 	int slices, stacks;
+
+	Sphere() : r(1), slices(16), stacks(16) {}
 
 	Sphere(float r, int slices, int stacks) : r(r), slices(slices), stacks(stacks) {}
 
@@ -418,6 +430,8 @@ private:
 struct Object {
 	Vector position;
 
+	bool attached;
+
 	virtual void draw() = 0;
 
 	void fling(Vector dir) {
@@ -425,27 +439,57 @@ struct Object {
 	}
 };
 
+static const float HEAD_RADIUS = 0.5f;
+static const float EYE_RADIUS = 0.05f;
+
 //a CSIRGURU szeme
 struct CsirguruEye : public Object {
 
-	void draw() {
+	Sphere eyeBall;
 
+	CsirguruEye() {
+		eyeBall.r = EYE_RADIUS;
+		eyeBall.slices = 16;
+		eyeBall.stacks = 16;
+	}
+
+	void draw() {
+		glColor3f(0, 0, 0);
+		eyeBall.draw();
 	}
 };
 
 //a CSIRGURU csőre
 struct CsirguruBeak : public Object {
 
-	void draw() {
+	Cone beak;
 
+	CsirguruBeak() {
+		beak.m = 0.2f;
+		beak.r = 0.1f;
+		beak.slices = 16;
+	}
+
+	void draw() {
+		glColor3f(1, 0.647f, 0);
+		beak.draw();
 	}
 };
 
 //a CSIRGURU taraja
 struct CsirguruComb : public Object {
 
-	void draw() {
+	Cone comb;
 
+	CsirguruComb() {
+		comb.m = 0.4f;
+		comb.r = 0.1f;
+		comb.slices = 16;
+	}
+
+	void draw() {
+		glColor3f(1, 0, 0);
+		comb.draw();
 	}
 };
 
@@ -500,13 +544,40 @@ struct CsirguruLeg : public Object {
 	}
 };
 
+struct CsirguruHead : public Object {
+
+	Sphere head;
+
+	CsirguruHead() {
+		head.r = HEAD_RADIUS;
+		head.slices = 20;
+		head.stacks = 20;
+	}
+
+	void explode(Vector center) {
+
+	}
+
+	void draw() {
+		glColor3f(0.9f, 0.9f, 0.9f);
+		head.draw();
+	}
+};
+
 //sexy beast
 struct Csirguru {
+	CsirguruBody body;
+	CsirguruLeg leg;
+	CsirguruHead head;
 	CsirguruEye eyeLeft, eyeRight;
 	CsirguruBeak beak;
-	CsirguruBody body;
-	CsirguruComb comb;
-	CsirguruLeg Leg;
+	CsirguruComb comb1, comb2, comb3, comb4, comb5, comb6, comb7;
+
+	float angle;
+
+	Csirguru() {
+		angle = 0;
+	}
 
 	void jump() {
 		//TODO random irány, fancy animation
@@ -517,7 +588,91 @@ struct Csirguru {
 	}
 
 	void draw() {
+		glPushMatrix();
+		glTranslatef(head.position.x, head.position.y, head.position.z);
+		head.draw();
+		glPopMatrix();
 
+		eyeLeft.position = Vector(sinf(angle + M_PI / 4) * HEAD_RADIUS, 0, cosf(angle + M_PI / 4) * HEAD_RADIUS);
+		glPushMatrix();
+		glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
+		eyeLeft.draw();
+		glPopMatrix();
+
+		eyeRight.position = Vector(sinf(angle - M_PI / 4) * HEAD_RADIUS, 0, cosf(angle - M_PI / 4) * HEAD_RADIUS);
+		glPushMatrix();
+		glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
+		eyeRight.draw();
+		glPopMatrix();
+
+		beak.position = Vector(sinf(angle) * (HEAD_RADIUS - 0.02f), 0, cosf(angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(beak.position.x, beak.position.y, beak.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(90, 1, 0, 0);
+		beak.draw();
+		glPopMatrix();
+
+		float comb1Angle = toRad(45);
+		comb1.position = Vector(sinf(angle) * cosf(comb1Angle) * (HEAD_RADIUS - 0.02f), sinf(comb1Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb1Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(45, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb2Angle = toRad(60);
+		comb1.position = Vector(sinf(angle) * cosf(comb2Angle) * (HEAD_RADIUS - 0.02f), sinf(comb2Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb2Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(30, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb3Angle = toRad(75);
+		comb1.position = Vector(sinf(angle) * cosf(comb3Angle) * (HEAD_RADIUS - 0.02f), sinf(comb3Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb3Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(15, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb4Angle = toRad(90);
+		comb1.position = Vector(sinf(angle) * cosf(comb4Angle) * (HEAD_RADIUS - 0.02f), sinf(comb4Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb4Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb5Angle = toRad(105);
+		comb1.position = Vector(sinf(angle) * cosf(comb5Angle) * (HEAD_RADIUS - 0.02f), sinf(comb5Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb5Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(-15, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb6Angle = toRad(120);
+		comb1.position = Vector(sinf(angle) * cosf(comb6Angle) * (HEAD_RADIUS - 0.02f), sinf(comb6Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb6Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(-30, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
+
+		float comb7Angle = toRad(135);
+		comb1.position = Vector(sinf(angle) * cosf(comb7Angle) * (HEAD_RADIUS - 0.02f), sinf(comb7Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb7Angle) * (HEAD_RADIUS - 0.02f));
+		glPushMatrix();
+		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+		glRotatef(toDeg(angle), 0, 1, 0);
+		glRotatef(-45, 1, 0, 0);
+		comb1.draw();
+		glPopMatrix();
 	}
 };
 
@@ -556,6 +711,8 @@ struct Scene {
 
 	Csirguru* csirgurus; //láncolt lista kéne
 
+	Csirguru testCs;
+
 	Field field;
 
 	float lightColor[4];
@@ -564,6 +721,7 @@ struct Scene {
 
 	Scene() {
 		field = Field();
+		testCs = Csirguru();
 		//camera = Camera();
 	}
 
@@ -575,7 +733,7 @@ struct Scene {
 
 		lightDir[0] = 0;
 		lightDir[1] = 1;
-		lightDir[2] = 0;
+		lightDir[2] = 1;
 		lightDir[3] = 0;
 	}
 
@@ -592,6 +750,11 @@ struct Scene {
 
 		glPushMatrix();
 		field.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslatef(-5, 5, -5);
+		testCs.draw();
 		glPopMatrix();
 
 		glPushMatrix();
