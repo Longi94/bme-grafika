@@ -538,6 +538,9 @@ struct CsirguruComb : public Object {
 struct CsirguruBody : public Object {
 
 	CatmullRom spine;
+	Vector tailPeak;
+	BezierCurve bezier[5];
+	float t[6] = {0, 1, 2, 3, 4, 5};
 
 	CsirguruBody() {
 		spine.addControlPoint(Vector(0, 0, 0), 0);
@@ -545,73 +548,116 @@ struct CsirguruBody : public Object {
 		spine.addControlPoint(Vector(0, -1.3f, -0.4f), 2);
 		spine.addControlPoint(Vector(0, -1.4f, -1.4f), 3);
 		spine.addControlPoint(Vector(0, -0.5f, -1.8f), 4);
+
+		bezier[0].addControlPoint(Vector(0, 0, 0));
+		bezier[0].addControlPoint(Vector(0.5f, 0, 0));
+		bezier[0].addControlPoint(Vector(0.5f, 0, 1));
+		bezier[0].addControlPoint(Vector(-0.5f, 0, 1));
+		bezier[0].addControlPoint(Vector(-0.5f, 0, 0));
+		bezier[0].addControlPoint(Vector(0, 0, 0));
+
+		bezier[1].addControlPoint(Vector(0, -0.5f, -0.1f));
+		bezier[1].addControlPoint(Vector(0.5f, -0.5f, -0.1f));
+		bezier[1].addControlPoint(Vector(0.5f, sinf(-M_PI / 6) - 0.5f, cosf(-M_PI / 6) - 0.1f));
+		bezier[1].addControlPoint(Vector(-0.5f, sinf(-M_PI / 6) - 0.5f, cosf(-M_PI / 6) - 0.1f));
+		bezier[1].addControlPoint(Vector(-0.5f, -0.5f, -0.1f));
+		bezier[1].addControlPoint(Vector(0, -0.5f, -0.1f));
+
+		bezier[2].addControlPoint(Vector(0, -1.3f, -0.4f));
+		bezier[2].addControlPoint(Vector(0.5f, -1.3f, -0.4f));
+		bezier[2].addControlPoint(Vector(0.5f, sinf(-M_PI / 3) - 1.3f, cosf(-M_PI / 3) - 0.4f));
+		bezier[2].addControlPoint(Vector(-0.5f, sinf(-M_PI / 3) - 1.3f, cosf(-M_PI / 3) - 0.4f));
+		bezier[2].addControlPoint(Vector(-0.5f, -1.3f, -0.4f));
+		bezier[2].addControlPoint(Vector(0, -1.3f, -0.4f));
+
+		bezier[3].addControlPoint(Vector(0, -1.4f, -1.4f));
+		bezier[3].addControlPoint(Vector(0.5f, -1.4f, -1.4f));
+		bezier[3].addControlPoint(Vector(0.5f, sinf(-4 * M_PI / 6) - 1.4f, cosf(-4 * M_PI / 6) - 1.4f));
+		bezier[3].addControlPoint(Vector(-0.5f, sinf(-4 * M_PI / 6) - 1.4f, cosf(-4 * M_PI / 6) - 1.4f));
+		bezier[3].addControlPoint(Vector(-0.5f, -1.4f, -1.4f));
+		bezier[3].addControlPoint(Vector(0, -1.4f, -1.4f));
+
+		tailPeak = Vector(0, -0.5f, -1.8f);
 	}
 
 	void draw() { 
+		
+		glColor3f(1, 0, 0);
+
+		float bstep = 1.0f / 50.0f;
+		for (float tb = 0; tb <= 1; tb += bstep) {
+			Vector curvePoint1 = bezier[0].getBezierCruvePoint(tb);
+			Vector curvePoint2 = bezier[1].getBezierCruvePoint(tb);
+			Vector curvePoint3 = bezier[2].getBezierCruvePoint(tb);
+			Vector curvePoint4 = bezier[3].getBezierCruvePoint(tb);
+
+			glPushMatrix();
+			glTranslatef(curvePoint1.x, curvePoint1.y, curvePoint1.z);
+			glutSolidSphere(0.02f, 2, 2);
+			glPopMatrix();
+
+			glPushMatrix();
+			glTranslatef(curvePoint2.x, curvePoint2.y, curvePoint2.z);
+			glutSolidSphere(0.02f, 2, 2);
+			glPopMatrix();
+
+			glPushMatrix();
+			glTranslatef(curvePoint3.x, curvePoint3.y, curvePoint3.z);
+			glutSolidSphere(0.02f, 2, 2);
+			glPopMatrix();
+
+			glPushMatrix();
+			glTranslatef(curvePoint4.x, curvePoint4.y, curvePoint4.z);
+			glutSolidSphere(0.02f, 2, 2);
+			glPopMatrix();
+		}
+
+		glPushMatrix();
+		glTranslatef(tailPeak.x, tailPeak.y, tailPeak.z);
+		glutSolidSphere(0.02f, 5, 5);
+		glPopMatrix();
 
 		glColor3f(0.9f, 0.9f, 0.9f);
 
-		glBegin(GL_TRIANGLE_STRIP);
-		for (int i = 0; i < spine.getSize() - 1; i++)
-		{
+		for (float tb = 0; tb < 1; tb += bstep) {
 
-			float step = (spine.getT(i + 1) - spine.getT(i)) / 20.0f;
+			//TODO optimize mindent kétszer számol
+			glBegin(GL_TRIANGLE_STRIP);
 
-			for (float t = spine.getT(i); t < spine.getT(i + 1); t += step)
+			CatmullRom cm1 = CatmullRom();
+			cm1.addControlPoint(bezier[0].getBezierCruvePoint(tb), t[0]);
+			cm1.addControlPoint(bezier[1].getBezierCruvePoint(tb), t[1]);
+			cm1.addControlPoint(bezier[2].getBezierCruvePoint(tb), t[2]);
+			cm1.addControlPoint(bezier[3].getBezierCruvePoint(tb), t[3]);
+			cm1.addControlPoint(tailPeak, t[5]);
+
+			CatmullRom cm2 = CatmullRom();
+			cm2.addControlPoint(bezier[0].getBezierCruvePoint(tb + bstep), t[0]);
+			cm2.addControlPoint(bezier[1].getBezierCruvePoint(tb + bstep), t[1]);
+			cm2.addControlPoint(bezier[2].getBezierCruvePoint(tb + bstep), t[2]);
+			cm2.addControlPoint(bezier[3].getBezierCruvePoint(tb + bstep), t[3]);
+			cm2.addControlPoint(tailPeak, t[5]);
+
+			for (int i = 0; i < cm1.getSize(); i++)
 			{
-				//Az aktuális és a következő catmull-rom pont
-				// TODO optimalizálni, így minden ponott kétszer számol ki...
-				Vector curve1 = spine.getHermiteCurvePoint(i, t);
-				Vector curve2 = spine.getHermiteCurvePoint(i, t + step);
+				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 10.0f;
 
-				//Deriváljuk a catmull-romot
-				Vector deriv1 = spine.getDerivative(i, t);
-				Vector normal1 = Vector(deriv1.x, deriv1.z, -deriv1.y);
+				for (float t = cm1.getT(i); t < cm1.getT(i + 1); t += step)	{
+					Vector cmPoint1 = cm1.getHermiteCurvePoint(i, t);
+					Vector cmPoint2 = cm2.getHermiteCurvePoint(i, t);
 
-				Vector deriv2 = spine.getDerivative(i, t + step);
-				Vector normal2 = Vector(deriv2.x, deriv2.z, -deriv2.y);
-
-				//Léterhozzuk a bézier görbéket
-				//Ezt is optimalizálni köll
-				BezierCurve bcurve1 = BezierCurve();
-				Vector cp1 = curve1 + normal1.norm() * 1;
-
-				bcurve1.addControlPoint(curve1);
-				bcurve1.addControlPoint(Vector(curve1.x - 0.5f, curve1.y, curve1.z));
-				bcurve1.addControlPoint(Vector(curve1.x - 0.5f, cp1.y, cp1.z));
-				bcurve1.addControlPoint(Vector(curve1.x + 0.5f, cp1.y, cp1.z));
-				bcurve1.addControlPoint(Vector(curve1.x + 0.5f, curve1.y, curve1.z));
-				bcurve1.addControlPoint(curve1);
-
-				BezierCurve bcurve2 = BezierCurve();
-				Vector cp2 = curve2 + normal2.norm() * 1;
-
-				bcurve2.addControlPoint(curve2);
-				bcurve2.addControlPoint(Vector(curve2.x - 0.5f, curve2.y, curve2.z));
-				bcurve2.addControlPoint(Vector(curve2.x - 0.5f, cp2.y, cp2.z));
-				bcurve2.addControlPoint(Vector(curve2.x + 0.5f, cp2.y, cp2.z));
-				bcurve2.addControlPoint(Vector(curve2.x + 0.5f, curve2.y, curve2.z));
-				bcurve2.addControlPoint(curve2);
-
-				for (float tb = 0; tb <= 1; tb += 1.0f / 50.0f)
-				{
-					Vector curvePoint1 = bcurve1.getBezierCruvePoint(tb);
-					Vector curvePoint2 = bcurve2.getBezierCruvePoint(tb);
-
-					Vector normal1 = bcurve1.getDerivative(tb) % (curvePoint1 - curvePoint2);
-					Vector normal2 = (curvePoint2 - curvePoint1) % bcurve2.getDerivative(tb);
+					//TODO temporary inaccurate normal vector
+					Vector normal1 = (cmPoint2 - cmPoint1) % (cm1.getHermiteCurvePoint(i, t + step) - cmPoint1);
+					Vector normal2 = (cmPoint2 - cmPoint1) % (cm2.getHermiteCurvePoint(i, t + step) - cmPoint2);
 
 					glNormal3f(normal1.x, normal1.y, normal1.z);
-					glVertex3f(curvePoint1.x, curvePoint1.y, curvePoint1.z);
-
+					glVertex3f(cmPoint1.x, cmPoint1.y, cmPoint1.z);
 					glNormal3f(normal2.x, normal2.y, normal2.z);
-					glVertex3f(curvePoint2.x, curvePoint2.y, curvePoint2.z);
+					glVertex3f(cmPoint2.x, cmPoint2.y, cmPoint2.z);
 				}
-
 			}
+			glEnd();
 		}
-
-		glEnd();
 	}
 };
 
