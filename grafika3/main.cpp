@@ -539,63 +539,58 @@ struct CsirguruComb : public Object {
 //a CSIGURU teste
 struct CsirguruBody : public Object {
 
-	BezierCurve bezier[5];
+	int BEZIER_COUNT = 6;
+
+	BezierCurve bezier[6];
 	float t[6] = {0, 1, 2, 3, 4, 5};
 
 	CsirguruBody() {
 
-		bezier[0].addControlPoint(Vector(0, 0, 0));
-		bezier[0].addControlPoint(Vector(0.5f, 0, 0));
-		bezier[0].addControlPoint(Vector(0.5f, 0, 1));
-		bezier[0].addControlPoint(Vector(-0.5f, 0, 1));
-		bezier[0].addControlPoint(Vector(-0.5f, 0, 0));
-		bezier[0].addControlPoint(Vector(0, 0, 0));
+		int i = 0;
+		Vector bCP = Vector(0, 0, 0);
+		float bAngle = 0;
+		float bSize = 1;
+		addBezierCircle(i, bCP, bAngle, bSize);
 
-		bezier[1].addControlPoint(Vector(0, -0.5f, -0.1f));
-		bezier[1].addControlPoint(Vector(0.5f, -0.5f, -0.1f));
-		bezier[1].addControlPoint(Vector(0.5f, sinf(-M_PI / 6) - 0.5f, cosf(-M_PI / 6) - 0.1f));
-		bezier[1].addControlPoint(Vector(-0.5f, sinf(-M_PI / 6) - 0.5f, cosf(-M_PI / 6) - 0.1f));
-		bezier[1].addControlPoint(Vector(-0.5f, -0.5f, -0.1f));
-		bezier[1].addControlPoint(Vector(0, -0.5f, -0.1f));
+		i = 1;
+		bCP.y = -0.5f;
+		bCP.z = -0.1f;
+		bAngle = toRad(-30);
+		bSize = 1;
+		addBezierCircle(i, bCP, bAngle, bSize);
 
-		bezier[2].addControlPoint(Vector(0, -1.3f, -0.4f));
-		bezier[2].addControlPoint(Vector(0.5f, -1.3f, -0.4f));
-		bezier[2].addControlPoint(Vector(0.5f, sinf(-M_PI / 3) - 1.3f, cosf(-M_PI / 3) - 0.4f));
-		bezier[2].addControlPoint(Vector(-0.5f, sinf(-M_PI / 3) - 1.3f, cosf(-M_PI / 3) - 0.4f));
-		bezier[2].addControlPoint(Vector(-0.5f, -1.3f, -0.4f));
-		bezier[2].addControlPoint(Vector(0, -1.3f, -0.4f));
+		i = 2;
+		bCP.y = -1.2f;
+		bCP.z = -0.5f;
+		bAngle = toRad(-50);
+		bSize = 2;
+		addBezierCircle(i, bCP, bAngle, bSize);
 
-		bezier[3].addControlPoint(Vector(0, -1.4f, -1.4f));
-		bezier[3].addControlPoint(Vector(0.5f, -1.4f, -1.4f));
-		bezier[3].addControlPoint(Vector(0.5f, sinf(-4 * M_PI / 6) - 1.4f, cosf(-4 * M_PI / 6) - 1.4f));
-		bezier[3].addControlPoint(Vector(-0.5f, sinf(-4 * M_PI / 6) - 1.4f, cosf(-4 * M_PI / 6) - 1.4f));
-		bezier[3].addControlPoint(Vector(-0.5f, -1.4f, -1.4f));
-		bezier[3].addControlPoint(Vector(0, -1.4f, -1.4f));
+		i = 3;
+		bCP.y = -1.35f;
+		bCP.z = -0.9f;
+		bAngle = toRad(-90);
+		bSize = 2.3f;
+		addBezierCircle(i, bCP, bAngle, bSize);
 
-		bezier[4].addControlPoint(Vector(0, -0.5f, -1.8f));
-		bezier[4].addControlPoint(Vector(EPSILON, -0.5f, -1.8f));
-		bezier[4].addControlPoint(Vector(EPSILON, -0.5f, -1.8f - 2*EPSILON));
-		bezier[4].addControlPoint(Vector(-EPSILON, -0.5f, -1.8f - 2*EPSILON));
-		bezier[4].addControlPoint(Vector(-EPSILON, -0.5f, -1.8f));
-		bezier[4].addControlPoint(Vector(0, -0.5f, -1.8f));
+		i = 4;
+		bCP.y = -1.3f;
+		bCP.z = -1.3f;
+		bAngle = toRad(-130);
+		bSize = 1.5f;
+		addBezierCircle(i, bCP, bAngle, bSize);
+
+		i = 5;
+		bCP.y = -0.5f;
+		bCP.z = -1.7f;
+		bAngle = toRad(-180);
+		bSize = 2 * EPSILON;
+		addBezierCircle(i, bCP, bAngle, bSize);
 	}
 
 	void draw() { 
-		
-		glColor3f(1, 0, 0);
 
 		float bstep = 1.0f / 50.0f;
-		for (float tb = 0; tb <= 1; tb += bstep) {
-			for (int i = 0; i < 5; i++)
-			{
-				Vector curvePoint = bezier[i].getBezierCruvePoint(tb);
-
-				glPushMatrix();
-				glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
-				glutSolidSphere(0.02f, 5, 5);
-				glPopMatrix();
-			}
-		}
 
 		glColor3f(0.9f, 0.9f, 0.9f);
 
@@ -607,7 +602,7 @@ struct CsirguruBody : public Object {
 			CatmullRom cm1 = CatmullRom();
 			CatmullRom cm2 = CatmullRom();
 
-			for (int i = 0; i < 5; i++)
+			for (int i = 0; i < BEZIER_COUNT; i++)
 			{
 				cm1.addControlPoint(bezier[i].getBezierCruvePoint(tb), t[i]);
 				cm2.addControlPoint(bezier[i].getBezierCruvePoint(tb + bstep), t[i]);
@@ -616,7 +611,7 @@ struct CsirguruBody : public Object {
 			CatmullRom cmNormal1 = CatmullRom();
 			CatmullRom cmNormal2 = CatmullRom();
 
-			for (int i = 0; i < 5; i++)
+			for (int i = 0; i < BEZIER_COUNT; i++)
 			{
 				cmNormal1.addControlPoint(bezier[i].getDerivative(tb) % cm1.getDerivative(i, t[i] - EPSILON), t[i]);
 				cmNormal2.addControlPoint(bezier[i].getDerivative(tb + bstep) % cm2.getDerivative(i, t[i] - EPSILON), t[i]);
@@ -641,6 +636,16 @@ struct CsirguruBody : public Object {
 			}
 			glEnd();
 		}
+	}
+
+private:
+	void addBezierCircle(int i, Vector cp, float angle, float size) {
+		bezier[i].addControlPoint(Vector(cp.x, cp.y, cp.z));
+		bezier[i].addControlPoint(Vector(cp.x + size / 2, cp.y, cp.z));
+		bezier[i].addControlPoint(Vector(cp.x + size / 2, size * sinf(angle) + cp.y, size * cosf(angle) + cp.z));
+		bezier[i].addControlPoint(Vector(cp.x - size / 2, size * sinf(angle) + cp.y, size * cosf(angle) + cp.z));
+		bezier[i].addControlPoint(Vector(cp.x - size / 2, cp.y, cp.z));
+		bezier[i].addControlPoint(Vector(cp.x, cp.y, cp.z));
 	}
 };
 
@@ -697,12 +702,11 @@ struct Csirguru {
 
 	void draw() {
 
-		body.position = Vector(sinf(angle + M_PI) * HEAD_RADIUS, 0, cosf(angle + M_PI) * HEAD_RADIUS);
+		body.position = Vector(sinf(angle + M_PI) * (HEAD_RADIUS - 10*EPSILON), 0, cosf(angle + M_PI) * (HEAD_RADIUS - 10*EPSILON));
 		glPushMatrix();
 		glTranslatef(body.position.x, body.position.y, body.position.z);
 		body.draw();
 		glPopMatrix();
-
 
 		glPushMatrix();
 		glTranslatef(head.position.x, head.position.y, head.position.z);
