@@ -209,6 +209,8 @@ struct Cylinder {
 	float r, m;
 	int slices;
 
+	Cylinder() : r(1), m(1), slices(16) {}
+
 	Cylinder(float r, float m, int slices) : r(r), m(m), slices(slices) {}
 
 	void draw() {
@@ -323,6 +325,63 @@ struct Sphere {
 			}
 		}
 
+		glEnd();
+	}
+};
+
+struct HalfCylinder {
+	float r, m;
+	int slices;
+
+	HalfCylinder() : r(1), m(1), slices(16) {}
+
+	HalfCylinder(float r, float m, int slices) : r(r), m(m), slices(slices) {}
+
+	void draw() {
+		//Bottom face
+		glBegin(GL_TRIANGLE_FAN);
+		glNormal3f(0, -1, 0);
+		glVertex3f(0, 0, 0);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = M_PI / slices * i;
+
+			glNormal3f(0, -1, 0);
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+		}
+		glEnd();
+
+		//Top face
+		glBegin(GL_TRIANGLE_FAN);
+		glNormal3f(0, 1, 0);
+		glVertex3f(0, m, 0);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = M_PI / slices * i;
+
+			glNormal3f(0, 1, 0);
+			glVertex3f(sinf(angle) * r, m, cosf(angle) * r);
+		}
+		glEnd();
+
+		//Sides
+		glBegin(GL_TRIANGLE_STRIP);
+		for (float i = 0; i <= slices; i++)
+		{
+			float angle = M_PI / slices * i;
+
+			glNormal3f(sinf(angle), 0, cosf(angle));
+			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
+			glVertex3f(sinf(angle) * r, m, cosf(angle) * r);
+		}
+		glEnd();
+
+		glBegin(GL_QUADS);
+		glNormal3f(-1, 0, 0);
+		glVertex3f(0, 0, r);
+		glVertex3f(0, m, r);
+		glVertex3f(0, m, -r);
+		glVertex3f(0, 0, -r);
 		glEnd();
 	}
 };
@@ -666,10 +725,94 @@ private:
 };
 
 //a CSIRGURU lába
-struct CsirguruLeg : public Object {
+struct CsirguruThigh : public Object {
+
+	Sphere joint;
+	Cylinder thigh;
+
+	CsirguruThigh() {
+		joint.r = 0.3f;
+		joint.slices = 16;
+		joint.stacks = 16;
+
+		thigh.r = 0.25f;
+		thigh.m = 1;
+		thigh.slices = 16;
+	}
 
 	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(0.9f, 0.9f, 0.9f);
+		}
+		joint.draw();
+		thigh.draw();
+	}
+};
 
+//a CSIRGURU lába
+struct CsirguruLeg : public Object {
+
+	Cylinder leg;
+
+	CsirguruLeg() {
+		leg.r = 0.2f;
+		leg.m = 0.8f;
+		leg.slices = 16;
+	}
+
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(1, 0.647f, 0);
+		}
+		leg.draw();
+	}
+};
+
+struct CsirguruFeet : public Object {
+
+	HalfCylinder feet;
+
+	CsirguruFeet() {
+		feet.m = 0.4f;
+		feet.r = 0.2f;
+		feet.slices = 8;
+	}
+
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(1, 0.647f, 0);
+		}
+		feet.draw();
+	}
+};
+
+struct CsirguruToe : public Object {
+
+	HalfCylinder toe;
+
+	CsirguruToe() {
+		toe.m = 0.25f;
+		toe.r = 0.15f;
+		toe.slices = 8;
+	}
+
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(1, 0.647f, 0);
+		}
+		toe.draw();
 	}
 };
 
@@ -701,7 +844,10 @@ struct CsirguruHead : public Object {
 //sexy beast
 struct Csirguru {
 	CsirguruBody body;
+	CsirguruThigh thigh;
 	CsirguruLeg leg;
+	CsirguruFeet feet;
+	CsirguruToe toe;
 	CsirguruHead head;
 	CsirguruEye eyeLeft, eyeRight;
 	CsirguruBeak beak;
@@ -728,25 +874,25 @@ struct Csirguru {
 		body.draw(shadow);
 		glPopMatrix();
 
-		head.position = Vector(body.position.x, body.position.y + 1.35f, 0.9f + (HEAD_RADIUS - 10 * EPSILON));
+		head.position = Vector(body.position.x, body.position.y + 1.35f, body.position.z + 0.9f + (HEAD_RADIUS * 4.0f / 5.0f));
 		glPushMatrix();
 		glTranslatef(head.position.x, head.position.y, head.position.z);
 		head.draw(shadow);
 		glPopMatrix();
 
-		eyeLeft.position = Vector(head.position.x + (-M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.y + cosf(-M_PI / 4) * HEAD_RADIUS);
+		eyeLeft.position = Vector(head.position.x + (-M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.z + cosf(-M_PI / 4) * HEAD_RADIUS);
 		glPushMatrix();
 		glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
 		eyeLeft.draw(shadow);
 		glPopMatrix();
 
-		eyeRight.position = Vector(head.position.x + sinf(M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.y + cosf(M_PI / 4) * HEAD_RADIUS);
+		eyeRight.position = Vector(head.position.x + sinf(M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.z + cosf(M_PI / 4) * HEAD_RADIUS);
 		glPushMatrix();
 		glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
 		eyeRight.draw(shadow);
 		glPopMatrix();
 
-		beak.position = Vector(head.position.x, head.position.y, head.position.y + (HEAD_RADIUS - 0.02f));
+		beak.position = Vector(head.position.x, head.position.y, head.position.z + (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(beak.position.x, beak.position.y, beak.position.z);
 		glRotatef(90, 1, 0, 0);
@@ -806,6 +952,34 @@ struct Csirguru {
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
 		glRotatef(-45, 1, 0, 0);
 		comb1.draw(shadow);
+		glPopMatrix();
+
+		thigh.position = body.position + Vector(0, -2, 0);
+		glPushMatrix();
+		glTranslatef(thigh.position.x, thigh.position.y, thigh.position.z);
+		thigh.draw(shadow);
+		glPopMatrix();
+
+		leg.position = thigh.position + Vector(0, -leg.leg.m, 0);
+		glPushMatrix();
+		glTranslatef(leg.position.x, leg.position.y, leg.position.z);
+		leg.draw(shadow);
+		glPopMatrix();
+
+		feet.position = leg.position;
+		glPushMatrix();
+		glTranslatef(feet.position.x, feet.position.y, feet.position.z);
+		glRotatef(90, 1, 0, 0);
+		glRotatef(90, 0, 1, 0);
+		feet.draw(shadow);
+		glPopMatrix();
+
+		toe.position = feet.position + Vector(0, 0, feet.feet.m);
+		glPushMatrix();
+		glTranslatef(toe.position.x, toe.position.y, toe.position.z);
+		glRotatef(90, 1, 0, 0);
+		glRotatef(90, 0, 1, 0);
+		toe.draw(shadow);
 		glPopMatrix();
 	}
 };
@@ -888,6 +1062,7 @@ struct Scene {
 
 		glPushMatrix();
 		glTranslatef(50, 5, 50);
+		glRotatef(30, 0, 1, 0);
 		testCs.draw(false);
 		glPopMatrix();
 
@@ -909,6 +1084,7 @@ struct Scene {
 
 		glPushMatrix();
 		glTranslatef(50, 5, 50);
+		glRotatef(30, 0, 1, 0);
 		testCs.draw(true);
 		glPopMatrix();
 	}
