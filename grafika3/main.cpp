@@ -991,25 +991,63 @@ struct Bomb : public Object {
 
 struct Field {
 	void draw() {
+		glEnable(GL_TEXTURE_2D);
+
+		applyTexture();
+
 		glBegin(GL_QUADS);
 
-		glColor3f(1, 1, 0);
+		glColor3f(1, 1, 1);
 		glNormal3f(0, 1, 0);
 
-		float f = 1;
+		float step = 1;
 
-		for (float i = 0; i < 100; i += f)
+		for (float i = 0; i < 100; i += step)
 		{
-			for (float j = 0; j < 100; j += f)
+			for (float j = 0; j < 100; j += step)
 			{
+				glTexCoord2f(i / 100.0f, j / 100.0f);
 				glVertex3f(i, 0, j);
-				glVertex3f(i + f, 0, j);
-				glVertex3f(i + f, 0, j + f);
-				glVertex3f(i, 0, j + f);
+
+				glTexCoord2f((i + step) / 100.0f, j / 100.0f);
+				glVertex3f(i + step, 0, j);
+
+				glTexCoord2f((i + step) / 100.0f, (j + step) / 100.0f);
+				glVertex3f(i + step, 0, j + step);
+
+				glTexCoord2f(i / 100.0f, (j + step) / 100.0f);
+				glVertex3f(i, 0, j + step);
 			}
 		}
 
 		glEnd();
+
+		glDisable(GL_TEXTURE_2D);
+	}
+
+	void applyTexture() {
+		Color texture[16][16];
+
+		for (int i = 0; i < 16; i++)
+		{
+			for (int j = 0; j < 16; j++)
+			{
+				if (j % 2 == i % 2) {
+					texture[i][j] = Color(0, 0.4f, 0);
+				}
+				else {
+					texture[i][j] = Color(0, 0, 0.5f);
+				}
+			}
+		}
+
+		GLuint id;
+		glGenTextures(1, &id);
+		glBindTexture(GL_TEXTURE_2D, id);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 16, 16, 0, GL_RGB, GL_FLOAT, texture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	}
 };
 
