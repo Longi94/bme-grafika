@@ -154,7 +154,7 @@ struct Camera {
 	Vector fwd, pos;
 	const float speed, mouse_speed;
 
-	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(9, 0, 4).norm()), pos(-9, 5, -4), speed(speed), mouse_speed(mouse_speed) { }
+	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, 0, -1).norm()), pos(55, 5, 55), speed(speed), mouse_speed(mouse_speed) { }
 
 	void updatePos(float dt) {
 		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
@@ -209,7 +209,7 @@ struct Cylinder {
 	float r, m;
 	int slices;
 
-	Cylinder(float r, float m, int slices): r(r), m(m), slices(slices) {}
+	Cylinder(float r, float m, int slices) : r(r), m(m), slices(slices) {}
 
 	void draw() {
 		//Bottom face
@@ -218,7 +218,7 @@ struct Cylinder {
 		glVertex3f(0, 0, 0);
 		for (float i = 0; i <= slices; i++)
 		{
-			float angle = 2*M_PI / slices * i;
+			float angle = 2 * M_PI / slices * i;
 
 			glNormal3f(0, -1, 0);
 			glVertex3f(sinf(angle) * r, 0, cosf(angle) * r);
@@ -307,7 +307,7 @@ struct Sphere {
 		for (int i = 0; i < stacks; i++)
 		{
 			float b1 = M_PI / stacks * i - M_PI / 2;
-			float b2 = M_PI / stacks * (i+1) - M_PI / 2;
+			float b2 = M_PI / stacks * (i + 1) - M_PI / 2;
 
 			for (int j = 0; j < slices; j++)
 			{
@@ -335,7 +335,7 @@ struct CatmullRom {
 	CatmullRom() : size(0) {}
 
 	void addControlPoint(Vector point, float t) {
-		if (size == 10) 
+		if (size == 10)
 			return;
 
 		this->points[size] = point;
@@ -475,7 +475,7 @@ struct Object {
 
 	bool attached;
 
-	virtual void draw() = 0;
+	virtual void draw(bool shadow) = 0;
 
 	void fling(Vector dir) {
 
@@ -492,11 +492,11 @@ struct CsirguruEye : public Object {
 
 	CsirguruEye() {
 		eyeBall.r = EYE_RADIUS;
-		eyeBall.slices = 16;
-		eyeBall.stacks = 16;
+		eyeBall.slices = 8;
+		eyeBall.stacks = 8;
 	}
 
-	void draw() {
+	void draw(bool shadow) {
 		glColor3f(0, 0, 0);
 		eyeBall.draw();
 	}
@@ -510,11 +510,16 @@ struct CsirguruBeak : public Object {
 	CsirguruBeak() {
 		beak.m = 0.2f;
 		beak.r = 0.1f;
-		beak.slices = 16;
+		beak.slices = 10;
 	}
 
-	void draw() {
-		glColor3f(1, 0.647f, 0);
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(1, 0.647f, 0);
+		}
 		beak.draw();
 	}
 };
@@ -527,11 +532,16 @@ struct CsirguruComb : public Object {
 	CsirguruComb() {
 		comb.m = 0.4f;
 		comb.r = 0.1f;
-		comb.slices = 16;
+		comb.slices = 10;
 	}
 
-	void draw() {
-		glColor3f(1, 0, 0);
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(1, 0, 0);
+		}
 		comb.draw();
 	}
 };
@@ -542,57 +552,63 @@ struct CsirguruBody : public Object {
 	int BEZIER_COUNT = 6;
 
 	BezierCurve bezier[6];
-	float t[6] = {0, 1, 2, 3, 4, 5};
+	float t[6] = { 0, 1, 2, 3, 4, 5 };
 
 	CsirguruBody() {
 
 		int i = 0;
-		Vector bCP = Vector(0, 0, 0);
+		Vector bCP = Vector(0, 1.35f, 0.9f);
 		float bAngle = 0;
 		float bSize = 1;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 1;
-		bCP.y = -0.5f;
-		bCP.z = -0.1f;
+		bCP.y = 0.85f;
+		bCP.z = 0.8f;
 		bAngle = toRad(-30);
 		bSize = 1;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 2;
-		bCP.y = -1.2f;
-		bCP.z = -0.5f;
+		bCP.y = 0.15f;
+		bCP.z = 0.4f;
 		bAngle = toRad(-50);
 		bSize = 2;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
+		//This shall be the anchor point
 		i = 3;
-		bCP.y = -1.35f;
-		bCP.z = -0.9f;
+		bCP.y = 0;
+		bCP.z = 0;
 		bAngle = toRad(-90);
 		bSize = 2.3f;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 4;
-		bCP.y = -1.3f;
-		bCP.z = -1.3f;
+		bCP.y = 0.05f;
+		bCP.z = -0.4f;
 		bAngle = toRad(-130);
 		bSize = 1.5f;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 5;
-		bCP.y = -0.5f;
-		bCP.z = -1.7f;
+		bCP.y = 0.85f;
+		bCP.z = -0.8f;
 		bAngle = toRad(-180);
 		bSize = 2 * EPSILON;
 		addBezierCircle(i, bCP, bAngle, bSize);
 	}
 
-	void draw() { 
+	void draw(bool shadow) {
 
-		float bstep = 1.0f / 50.0f;
+		float bstep = 1.0f / 20.0f;
 
-		glColor3f(0.9f, 0.9f, 0.9f);
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(0.9f, 0.9f, 0.9f);
+		}
 
 		for (float tb = 0; tb < 1; tb += bstep) {
 
@@ -619,9 +635,9 @@ struct CsirguruBody : public Object {
 
 			for (int i = 0; i < cm1.getSize(); i++)
 			{
-				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 10.0f;
+				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 4.0f;
 
-				for (float t = cm1.getT(i); t < cm1.getT(i + 1); t += step)	{
+				for (float t = cm1.getT(i); t <= cm1.getT(i + 1); t += step) {
 					Vector cmPoint1 = cm1.getHermiteCurvePoint(i, t);
 					Vector cmPoint2 = cm2.getHermiteCurvePoint(i, t);
 
@@ -652,7 +668,7 @@ private:
 //a CSIRGURU lába
 struct CsirguruLeg : public Object {
 
-	void draw() {
+	void draw(bool shadow) {
 
 	}
 };
@@ -671,8 +687,13 @@ struct CsirguruHead : public Object {
 
 	}
 
-	void draw() {
-		glColor3f(0.9f, 0.9f, 0.9f);
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(0.9f, 0.9f, 0.9f);
+		}
 		head.draw();
 	}
 };
@@ -700,98 +721,91 @@ struct Csirguru {
 		//TODO fling all body parts
 	}
 
-	void draw() {
+	void draw(bool shadow) {
 
-		body.position = Vector(sinf(angle + M_PI) * (HEAD_RADIUS - 10*EPSILON), 0, cosf(angle + M_PI) * (HEAD_RADIUS - 10*EPSILON));
 		glPushMatrix();
 		glTranslatef(body.position.x, body.position.y, body.position.z);
-		body.draw();
+		body.draw(shadow);
 		glPopMatrix();
 
+		head.position = Vector(body.position.x, body.position.y + 1.35f, 0.9f + (HEAD_RADIUS - 10 * EPSILON));
 		glPushMatrix();
 		glTranslatef(head.position.x, head.position.y, head.position.z);
-		head.draw();
+		head.draw(shadow);
 		glPopMatrix();
 
-		eyeLeft.position = Vector(sinf(angle + M_PI / 4) * HEAD_RADIUS, 0, cosf(angle + M_PI / 4) * HEAD_RADIUS);
+		eyeLeft.position = Vector(head.position.x + (-M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.y + cosf(-M_PI / 4) * HEAD_RADIUS);
 		glPushMatrix();
 		glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
-		eyeLeft.draw();
+		eyeLeft.draw(shadow);
 		glPopMatrix();
 
-		eyeRight.position = Vector(sinf(angle - M_PI / 4) * HEAD_RADIUS, 0, cosf(angle - M_PI / 4) * HEAD_RADIUS);
+		eyeRight.position = Vector(head.position.x + sinf(M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.y + cosf(M_PI / 4) * HEAD_RADIUS);
 		glPushMatrix();
 		glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
-		eyeRight.draw();
+		eyeRight.draw(shadow);
 		glPopMatrix();
 
-		beak.position = Vector(sinf(angle) * (HEAD_RADIUS - 0.02f), 0, cosf(angle) * (HEAD_RADIUS - 0.02f));
+		beak.position = Vector(head.position.x, head.position.y, head.position.y + (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(beak.position.x, beak.position.y, beak.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(90, 1, 0, 0);
-		beak.draw();
+		beak.draw(shadow);
 		glPopMatrix();
 
 		float comb1Angle = toRad(45);
-		comb1.position = Vector(sinf(angle) * cosf(comb1Angle) * (HEAD_RADIUS - 0.02f), sinf(comb1Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb1Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb1Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb1Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(45, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb2Angle = toRad(60);
-		comb1.position = Vector(sinf(angle) * cosf(comb2Angle) * (HEAD_RADIUS - 0.02f), sinf(comb2Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb2Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb2Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb2Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(30, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb3Angle = toRad(75);
-		comb1.position = Vector(sinf(angle) * cosf(comb3Angle) * (HEAD_RADIUS - 0.02f), sinf(comb3Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb3Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb3Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb3Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(15, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb4Angle = toRad(90);
-		comb1.position = Vector(sinf(angle) * cosf(comb4Angle) * (HEAD_RADIUS - 0.02f), sinf(comb4Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb4Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb4Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb4Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb5Angle = toRad(105);
-		comb1.position = Vector(sinf(angle) * cosf(comb5Angle) * (HEAD_RADIUS - 0.02f), sinf(comb5Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb5Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb5Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb5Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(-15, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb6Angle = toRad(120);
-		comb1.position = Vector(sinf(angle) * cosf(comb6Angle) * (HEAD_RADIUS - 0.02f), sinf(comb6Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb6Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb6Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb6Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(-30, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 
 		float comb7Angle = toRad(135);
-		comb1.position = Vector(sinf(angle) * cosf(comb7Angle) * (HEAD_RADIUS - 0.02f), sinf(comb7Angle) * (HEAD_RADIUS - 0.02f), cosf(angle) * cosf(comb7Angle) * (HEAD_RADIUS - 0.02f));
+		comb1.position = Vector(head.position.x, head.position.y + sinf(comb7Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb7Angle) * (HEAD_RADIUS - 0.02f));
 		glPushMatrix();
 		glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-		glRotatef(toDeg(angle), 0, 1, 0);
 		glRotatef(-45, 1, 0, 0);
-		comb1.draw();
+		comb1.draw(shadow);
 		glPopMatrix();
 	}
 };
@@ -873,35 +887,8 @@ struct Scene {
 		glPopMatrix();
 
 		glPushMatrix();
-		glTranslatef(-5, 5, -5);
-		glRotatef(30, 0, 1, 0);
-		testCs.draw();
-		glPopMatrix();
-
-		//Test cylinder
-		glPushMatrix();
-		glColor3f(1, 1, 1);
-		Cylinder cylinder(2, 10, 16);
-		glTranslatef(10, 5, 10);
-		glRotatef(30, 1, 1, 1);
-		cylinder.draw();
-		glPopMatrix();
-
-		//Test cone
-		glPushMatrix();
-		glColor3f(0, 0, 1);
-		Cone cone(2, 5, 16);
-		glTranslatef(10, 5, 20);
-		glRotatef(30, 1, 1, 1);
-		cone.draw();
-		glPopMatrix();
-
-		//Test sphere
-		glPushMatrix();
-		glColor3f(0, 1, 1);
-		Sphere shpere(2.5f, 16, 16);
-		glTranslatef(20, 5, 10);
-		shpere.draw();
+		glTranslatef(50, 5, 50);
+		testCs.draw(false);
 		glPopMatrix();
 
 		//4x4 mtx, árnyék mtx
@@ -919,23 +906,10 @@ struct Scene {
 		glDisable(GL_LIGHT1);
 
 		glColor3f(0, 0, 0);
-		//Test cylinder
-		glPushMatrix();
-		glTranslatef(10, 5, 10);
-		glRotatef(30, 1, 1, 1);
-		cylinder.draw();
-		glPopMatrix();
-
-		//Test cone
-		glPushMatrix();
-		glTranslatef(10, 5, 20);
-		glRotatef(30, 1, 1, 1);
-		cone.draw();
-		glPopMatrix();
 
 		glPushMatrix();
-		glTranslatef(20, 5, 10);
-		shpere.draw();
+		glTranslatef(50, 5, 50);
+		testCs.draw(true);
 		glPopMatrix();
 	}
 
@@ -979,7 +953,7 @@ void onInitialization() {
 		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
 		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);*/
 
-	//Ambiens fény?
+		//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
 	//Irányfényforrás
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
@@ -991,7 +965,7 @@ void onInitialization() {
 
 void onDisplay() {
 	glClearColor(0, 0, 0, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	scene.render();
 
