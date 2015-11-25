@@ -132,6 +132,8 @@ float toDeg(float rad) {
 	return rad * (180.0f / M_PI);
 }
 
+float EPSILON = 0.001f;
+
 /*struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
@@ -341,7 +343,7 @@ struct CatmullRom {
 	}
 
 	Vector getHermiteCurvePoint(int i, float t) {
-		if (t > (this->t)[i + 1]) {
+		if (t > (this->t)[i + 1] && i + 1 < size) {
 			i++;
 		}
 		float deltaT = t - (this->t)[i];
@@ -353,7 +355,7 @@ struct CatmullRom {
 	}
 
 	Vector getDerivative(int i, float t) {
-		if (t > (this->t)[i + 1]) {
+		if (t > (this->t)[i + 1] && i + 1 < size) {
 			i++;
 		}
 		float deltaT = t - (this->t)[i];
@@ -428,7 +430,7 @@ struct BezierCurve {
 
 	Vector getDerivative(float t) {
 		if (t == 0) {
-			t += 0.0001f;
+			t += EPSILON;
 		}
 		Vector r = Vector();
 
@@ -537,17 +539,10 @@ struct CsirguruComb : public Object {
 //a CSIGURU teste
 struct CsirguruBody : public Object {
 
-	CatmullRom spine;
-	Vector tailPeak;
 	BezierCurve bezier[5];
 	float t[6] = {0, 1, 2, 3, 4, 5};
 
 	CsirguruBody() {
-		spine.addControlPoint(Vector(0, 0, 0), 0);
-		spine.addControlPoint(Vector(0, -0.5f, -0.1f), 1);
-		spine.addControlPoint(Vector(0, -1.3f, -0.4f), 2);
-		spine.addControlPoint(Vector(0, -1.4f, -1.4f), 3);
-		spine.addControlPoint(Vector(0, -0.5f, -1.8f), 4);
 
 		bezier[0].addControlPoint(Vector(0, 0, 0));
 		bezier[0].addControlPoint(Vector(0.5f, 0, 0));
@@ -577,7 +572,12 @@ struct CsirguruBody : public Object {
 		bezier[3].addControlPoint(Vector(-0.5f, -1.4f, -1.4f));
 		bezier[3].addControlPoint(Vector(0, -1.4f, -1.4f));
 
-		tailPeak = Vector(0, -0.5f, -1.8f);
+		bezier[4].addControlPoint(Vector(0, -0.5f, -1.8f));
+		bezier[4].addControlPoint(Vector(EPSILON, -0.5f, -1.8f));
+		bezier[4].addControlPoint(Vector(EPSILON, -0.5f, -1.8f - 2*EPSILON));
+		bezier[4].addControlPoint(Vector(-EPSILON, -0.5f, -1.8f - 2*EPSILON));
+		bezier[4].addControlPoint(Vector(-EPSILON, -0.5f, -1.8f));
+		bezier[4].addControlPoint(Vector(0, -0.5f, -1.8f));
 	}
 
 	void draw() { 
@@ -586,36 +586,16 @@ struct CsirguruBody : public Object {
 
 		float bstep = 1.0f / 50.0f;
 		for (float tb = 0; tb <= 1; tb += bstep) {
-			Vector curvePoint1 = bezier[0].getBezierCruvePoint(tb);
-			Vector curvePoint2 = bezier[1].getBezierCruvePoint(tb);
-			Vector curvePoint3 = bezier[2].getBezierCruvePoint(tb);
-			Vector curvePoint4 = bezier[3].getBezierCruvePoint(tb);
+			for (int i = 0; i < 5; i++)
+			{
+				Vector curvePoint = bezier[i].getBezierCruvePoint(tb);
 
-			glPushMatrix();
-			glTranslatef(curvePoint1.x, curvePoint1.y, curvePoint1.z);
-			glutSolidSphere(0.02f, 2, 2);
-			glPopMatrix();
-
-			glPushMatrix();
-			glTranslatef(curvePoint2.x, curvePoint2.y, curvePoint2.z);
-			glutSolidSphere(0.02f, 2, 2);
-			glPopMatrix();
-
-			glPushMatrix();
-			glTranslatef(curvePoint3.x, curvePoint3.y, curvePoint3.z);
-			glutSolidSphere(0.02f, 2, 2);
-			glPopMatrix();
-
-			glPushMatrix();
-			glTranslatef(curvePoint4.x, curvePoint4.y, curvePoint4.z);
-			glutSolidSphere(0.02f, 2, 2);
-			glPopMatrix();
+				glPushMatrix();
+				glTranslatef(curvePoint.x, curvePoint.y, curvePoint.z);
+				glutSolidSphere(0.02f, 5, 5);
+				glPopMatrix();
+			}
 		}
-
-		glPushMatrix();
-		glTranslatef(tailPeak.x, tailPeak.y, tailPeak.z);
-		glutSolidSphere(0.02f, 5, 5);
-		glPopMatrix();
 
 		glColor3f(0.9f, 0.9f, 0.9f);
 
@@ -625,18 +605,22 @@ struct CsirguruBody : public Object {
 			glBegin(GL_TRIANGLE_STRIP);
 
 			CatmullRom cm1 = CatmullRom();
-			cm1.addControlPoint(bezier[0].getBezierCruvePoint(tb), t[0]);
-			cm1.addControlPoint(bezier[1].getBezierCruvePoint(tb), t[1]);
-			cm1.addControlPoint(bezier[2].getBezierCruvePoint(tb), t[2]);
-			cm1.addControlPoint(bezier[3].getBezierCruvePoint(tb), t[3]);
-			cm1.addControlPoint(tailPeak, t[5]);
-
 			CatmullRom cm2 = CatmullRom();
-			cm2.addControlPoint(bezier[0].getBezierCruvePoint(tb + bstep), t[0]);
-			cm2.addControlPoint(bezier[1].getBezierCruvePoint(tb + bstep), t[1]);
-			cm2.addControlPoint(bezier[2].getBezierCruvePoint(tb + bstep), t[2]);
-			cm2.addControlPoint(bezier[3].getBezierCruvePoint(tb + bstep), t[3]);
-			cm2.addControlPoint(tailPeak, t[5]);
+
+			for (int i = 0; i < 5; i++)
+			{
+				cm1.addControlPoint(bezier[i].getBezierCruvePoint(tb), t[i]);
+				cm2.addControlPoint(bezier[i].getBezierCruvePoint(tb + bstep), t[i]);
+			}
+
+			CatmullRom cmNormal1 = CatmullRom();
+			CatmullRom cmNormal2 = CatmullRom();
+
+			for (int i = 0; i < 5; i++)
+			{
+				cmNormal1.addControlPoint(bezier[i].getDerivative(tb) % cm1.getDerivative(i, t[i] - EPSILON), t[i]);
+				cmNormal2.addControlPoint(bezier[i].getDerivative(tb + bstep) % cm2.getDerivative(i, t[i] - EPSILON), t[i]);
+			}
 
 			for (int i = 0; i < cm1.getSize(); i++)
 			{
@@ -646,9 +630,8 @@ struct CsirguruBody : public Object {
 					Vector cmPoint1 = cm1.getHermiteCurvePoint(i, t);
 					Vector cmPoint2 = cm2.getHermiteCurvePoint(i, t);
 
-					//TODO temporary inaccurate normal vector
-					Vector normal1 = (cmPoint2 - cmPoint1) % (cm1.getHermiteCurvePoint(i, t + step) - cmPoint1);
-					Vector normal2 = (cmPoint2 - cmPoint1) % (cm2.getHermiteCurvePoint(i, t + step) - cmPoint2);
+					Vector normal1 = cmNormal1.getHermiteCurvePoint(i, t);
+					Vector normal2 = cmNormal2.getHermiteCurvePoint(i, t);
 
 					glNormal3f(normal1.x, normal1.y, normal1.z);
 					glVertex3f(cmPoint1.x, cmPoint1.y, cmPoint1.z);
@@ -887,6 +870,7 @@ struct Scene {
 
 		glPushMatrix();
 		glTranslatef(-5, 5, -5);
+		glRotatef(30, 0, 1, 0);
 		testCs.draw();
 		glPopMatrix();
 
@@ -922,7 +906,7 @@ struct Scene {
 			1, 0, 0, 0,
 			-lightDir[0] / lightDir[1], 0, -lightDir[2] / lightDir[1], 0,
 			0, 0, 1, 0,
-			0, 0.001f, 0, 1
+			0, EPSILON, 0, 1
 		};
 		glMultMatrixf(&shadow[0][0]);
 
