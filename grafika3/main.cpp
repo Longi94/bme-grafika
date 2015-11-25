@@ -542,7 +542,6 @@ struct Object {
 };
 
 static const float HEAD_RADIUS = 0.5f;
-static const float EYE_RADIUS = 0.05f;
 
 //a CSIRGURU szeme
 struct CsirguruEye : public Object {
@@ -550,7 +549,7 @@ struct CsirguruEye : public Object {
 	Sphere eyeBall;
 
 	CsirguruEye() {
-		eyeBall.r = EYE_RADIUS;
+		eyeBall.r = 0.1f;
 		eyeBall.slices = 8;
 		eyeBall.stacks = 8;
 	}
@@ -880,13 +879,13 @@ struct Csirguru {
 		head.draw(shadow);
 		glPopMatrix();
 
-		eyeLeft.position = Vector(head.position.x + (-M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.z + cosf(-M_PI / 4) * HEAD_RADIUS);
+		eyeLeft.position = Vector(head.position.x + sinf(M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON), head.position.y, head.position.z + cosf(M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON));
 		glPushMatrix();
 		glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
 		eyeLeft.draw(shadow);
 		glPopMatrix();
 
-		eyeRight.position = Vector(head.position.x + sinf(M_PI / 4) * HEAD_RADIUS, head.position.y, head.position.z + cosf(M_PI / 4) * HEAD_RADIUS);
+		eyeRight.position = Vector(head.position.x + sinf(-M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON), head.position.y, head.position.z + cosf(-M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON));
 		glPushMatrix();
 		glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
 		eyeRight.draw(shadow);
