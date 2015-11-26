@@ -44,6 +44,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
+#include <iostream>
 
 #if defined(__APPLE__)                                                                                                                                                                                                            
 #include <OpenGL/gl.h>                                                                                                                                                                                                            
@@ -155,7 +156,7 @@ struct Camera {
 	Vector fwd, pos;
 	const float speed, mouse_speed;
 
-	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, 0, -1).norm()), pos(55, 5, 55), speed(speed), mouse_speed(mouse_speed) { }
+	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, -0.5f, -1).norm()), pos(55, 5, 55), speed(speed), mouse_speed(mouse_speed) { }
 
 	void updatePos(float dt) {
 		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
@@ -744,7 +745,7 @@ struct CsirguruThigh : public Object {
 		joint.stacks = 16;
 
 		thigh.r = 0.25f;
-		thigh.m = 1;
+		thigh.m = 0.5f;
 		thigh.slices = 16;
 	}
 
@@ -867,24 +868,38 @@ struct Csirguru {
 	CsirguruBeak beak;
 	CsirguruComb comb1, comb2, comb3, comb4, comb5, comb6, comb7;
 
-	Vector position;
-	bool toeAnchored;
-	bool exploded;
+	Vector position, jumpOrigin;
 
-	float kneeAngle = toRad(135);
-	float ankleAngle = toRad(90);
-	float toeAngle = toRad(135);
+	bool toeAnchored, exploded;
+	float kneeAngle, ankleAngle, toeAngle;
+	long timeOfExplosion, timeOfJump;
 
-	long timeOfExplosion;
+	long animPrepareDuration, animAccelerateDuration;
+	float animPerpareAnkleStart, animPerpareAnkleEnd, animPrepareToeStart, animPrepareToeEnd;
+
+	float animAccelerateAnkleStart, animAccelerateAnkleEnd, animAccelerateToeStart, animAccelerateToeEnd;
 
 	Csirguru() {
 		position = Vector();
 		toeAnchored = true;
 		exploded = false;
-	}
 
-	void jump() {
-		//TODO random irány, fancy animation
+		kneeAngle = toRad(135);
+		ankleAngle = toRad(90);
+		toeAngle = toRad(135);
+
+		animPrepareDuration = 500;
+		animAccelerateDuration = 1000;
+
+		animPerpareAnkleStart = 90;
+		animPerpareAnkleEnd = 30;
+		animPrepareToeStart = 135;
+		animPrepareToeEnd = 165;
+
+		animAccelerateAnkleStart = 30;
+		animAccelerateAnkleEnd = 180;
+		animAccelerateToeStart = 165;
+		animAccelerateToeEnd = 90;
 	}
 
 	void explode(Vector center, long t) {
@@ -916,19 +931,58 @@ struct Csirguru {
 		obj.spinAxis = Vector((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
 	}
 
+	void animateValues(long t) {
+		if (t > timeOfJump + animPrepareDuration + animAccelerateDuration) {
+			timeOfJump = t;
+			jumpOrigin = position;
+			return;
+		}
+
+		float dt = t - timeOfJump;
+
+		if (dt < animPrepareDuration) {
+			float d = (float)dt / (float)animPrepareDuration;
+
+			ankleAngle = (animPerpareAnkleEnd - animPerpareAnkleStart) * d + animPerpareAnkleStart;
+			toeAngle = (animPrepareToeEnd - animPrepareToeStart) * d + animPrepareToeStart;
+
+			ankleAngle = toRad(ankleAngle);
+			toeAngle = toRad(toeAngle);
+			return;
+		}
+
+		dt -= animPrepareDuration;
+		if (dt < animAccelerateDuration) {
+			float d = (float)dt / (float)animAccelerateDuration;
+
+			float ankleAccel = 2 * (animAccelerateAnkleEnd - animAccelerateAnkleStart) / (animAccelerateDuration*animAccelerateDuration / 1000.0f / 1000.0f);
+			float toeAccel = 2 * (animAccelerateToeEnd - animAccelerateToeStart) / (animAccelerateDuration*animAccelerateDuration / 1000.0f / 1000.0f);
+
+			ankleAngle = ankleAccel / 2.0f * d * d + animAccelerateAnkleStart;
+			toeAngle = toeAccel / 2.0f * d * d + animAccelerateToeStart;
+
+			ankleAngle = toRad(ankleAngle);
+			toeAngle = toRad(toeAngle);
+			return;
+		}
+	}
+
 	void draw(long t, bool shadow) {
 
 		if (!exploded) {
+
+			animateValues(t);
+
 			if (toeAnchored) {
 				toe.position = position;
 				feet.position = toe.position;
 				leg.position = feet.position + Vector(0, sinf(toeAngle) * feet.feet.m, cosf(toeAngle) * feet.feet.m);
-				thigh.position = leg.position + Vector(0, sinf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m, cosf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m);
-				body.position = thigh.position + Vector(0, 2, 0);
+				thigh.position = leg.position + Vector(0, cosf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m, sinf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m);
+				body.position = thigh.position + Vector(0, 1.6f, 0);
 			}
 			else {
 				body.position = position;
-				thigh.position = body.position + Vector(0, -2, 0);
+				thigh.position = body.position + Vector(0, -1.6f, 0);
 				leg.position = thigh.position + Vector(0, sinf(M_PI / 2 + kneeAngle) * leg.leg.m, cosf(M_PI / 2 + kneeAngle) * leg.leg.m);
 				feet.position = leg.position;
 				toe.position = feet.position + Vector(0, -sinf(M_PI / 2 - kneeAngle + ankleAngle) * feet.feet.m, cosf(M_PI / 2 - kneeAngle + ankleAngle) * feet.feet.m);
@@ -1218,7 +1272,7 @@ struct Scene {
 		lightColor[2] = 1;
 		lightColor[3] = 1;
 
-		lightDir[0] = 0;
+		lightDir[0] = -0.7f;
 		lightDir[1] = 1;
 		lightDir[2] = 1;
 		lightDir[3] = 0;
