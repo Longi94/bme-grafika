@@ -741,7 +741,7 @@ struct CsirguruThigh : public Object {
 	Cylinder thigh;
 
 	CsirguruThigh() {
-		joint.r = 0.3f;
+		joint.r = 0.25f;
 		joint.slices = 16;
 		joint.stacks = 16;
 
@@ -867,9 +867,10 @@ struct Csirguru {
 	bool toeAnchored;
 	bool exploded;
 
-	float kneeAngle = M_PI;
+	float bodyAngle = M_PI / 9;
+	float kneeAngle = M_PI * 3 / 4;
 	float ankleAngle = M_PI / 2;
-	float toeAngle = M_PI;
+	float toeAngle = M_PI * 7 / 8;
 
 	long timeOfExplosion;
 
@@ -917,15 +918,14 @@ struct Csirguru {
 
 		if (!exploded) {
 			if (!toeAnchored) {
-				toe.position = Vector();
+				toe.position = position;
 			}
 			else {
-				body.position = Vector();
+				body.position = position;
 				head.position = Vector(body.position.x, body.position.y + 1.35f, body.position.z + 0.9f + (HEAD_RADIUS * 4.0f / 5.0f));
 				eyeLeft.position = Vector(head.position.x + sinf(M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON), head.position.y, head.position.z + cosf(M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON));
 				eyeRight.position = Vector(head.position.x + sinf(-M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON), head.position.y, head.position.z + cosf(-M_PI / 4) * (HEAD_RADIUS - 10 * EPSILON));
 				beak.position = Vector(head.position.x, head.position.y, head.position.z + (HEAD_RADIUS - 0.02f));
-
 				float comb1Angle = toRad(45);
 				comb1.position = Vector(head.position.x, head.position.y + sinf(comb1Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb1Angle) * (HEAD_RADIUS - 0.02f));
 				float comb2Angle = toRad(60);
@@ -941,99 +941,109 @@ struct Csirguru {
 				float comb7Angle = toRad(135);
 				comb7.position = Vector(head.position.x, head.position.y + sinf(comb7Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb7Angle) * (HEAD_RADIUS - 0.02f));
 
-				thigh.position = body.position + Vector(0, -2, 0);
-				leg.position = thigh.position + Vector(0, -leg.leg.m, 0);
+				thigh.position = body.position + Vector(0, sinf(bodyAngle - M_PI / 2) * 2, cosf(bodyAngle - M_PI / 2) * 2);
+
+				leg.position = thigh.position + Vector(0, sinf(M_PI / 2 + kneeAngle + bodyAngle) * leg.leg.m, cosf(M_PI / 2 + kneeAngle + bodyAngle) * leg.leg.m);
+
 				feet.position = leg.position;
-				toe.position = feet.position + Vector(0, 0, feet.feet.m);
+				toe.position = feet.position + Vector(0, -sinf(M_PI / 2 - bodyAngle - kneeAngle + ankleAngle) * feet.feet.m, cosf(M_PI / 2 - bodyAngle - kneeAngle + ankleAngle) * feet.feet.m);
 			}
 
-			glPushMatrix();
-			glTranslatef(body.position.x, body.position.y, body.position.z);
-			body.draw(shadow);
-			glPopMatrix();
+			glPushMatrix(); {
 
-			glPushMatrix();
-			glTranslatef(head.position.x, head.position.y, head.position.z);
-			head.draw(shadow);
-			glPopMatrix();
+				glRotatef(toDeg(bodyAngle), -1, 0, 0);
 
-			glPushMatrix();
-			glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
-			eyeLeft.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(body.position.x, body.position.y, body.position.z);
+					body.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
-			eyeRight.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(head.position.x, head.position.y, head.position.z);
+					head.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(beak.position.x, beak.position.y, beak.position.z);
-			glRotatef(90, 1, 0, 0);
-			beak.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(eyeLeft.position.x, eyeLeft.position.y, eyeLeft.position.z);
+					eyeLeft.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
-			glRotatef(45, 1, 0, 0);
-			comb1.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(eyeRight.position.x, eyeRight.position.y, eyeRight.position.z);
+					eyeRight.draw(shadow);
+				}glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb2.position.x, comb2.position.y, comb2.position.z);
-			glRotatef(30, 1, 0, 0);
-			comb2.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(beak.position.x, beak.position.y, beak.position.z);
+					glRotatef(90, 1, 0, 0);
+					beak.draw(shadow);
+				}glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb3.position.x, comb3.position.y, comb3.position.z);
-			glRotatef(15, 1, 0, 0);
-			comb3.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(comb1.position.x, comb1.position.y, comb1.position.z);
+					glRotatef(45, 1, 0, 0);
+					comb1.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb4.position.x, comb4.position.y, comb4.position.z);
-			comb4.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(comb2.position.x, comb2.position.y, comb2.position.z);
+					glRotatef(30, 1, 0, 0);
+					comb2.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb5.position.x, comb5.position.y, comb5.position.z);
-			glRotatef(-15, 1, 0, 0);
-			comb5.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); { 
+					glTranslatef(comb3.position.x, comb3.position.y, comb3.position.z);
+					glRotatef(15, 1, 0, 0);
+					comb3.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb6.position.x, comb6.position.y, comb6.position.z);
-			glRotatef(-30, 1, 0, 0);
-			comb6.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(comb4.position.x, comb4.position.y, comb4.position.z);
+					comb4.draw(shadow);
+				} glPopMatrix();
 
-			glPushMatrix();
-			glTranslatef(comb7.position.x, comb7.position.y, comb7.position.z);
-			glRotatef(-45, 1, 0, 0);
-			comb7.draw(shadow);
-			glPopMatrix();
+				glPushMatrix(); {
+					glTranslatef(comb5.position.x, comb5.position.y, comb5.position.z);
+					glRotatef(-15, 1, 0, 0);
+					comb5.draw(shadow);
+				} glPopMatrix();
+
+				glPushMatrix(); {
+					glTranslatef(comb6.position.x, comb6.position.y, comb6.position.z);
+					glRotatef(-30, 1, 0, 0);
+					comb6.draw(shadow);
+				} glPopMatrix();
+
+				glPushMatrix(); {
+					glTranslatef(comb7.position.x, comb7.position.y, comb7.position.z);
+					glRotatef(-45, 1, 0, 0);
+					comb7.draw(shadow);
+				} glPopMatrix();
+
+			} glPopMatrix();
 
 			glPushMatrix();
 			glTranslatef(thigh.position.x, thigh.position.y, thigh.position.z);
+			glRotatef(toDeg(bodyAngle), -1, 0, 0);
 			thigh.draw(shadow);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslatef(leg.position.x, leg.position.y, leg.position.z);
+			glRotatef(toDeg(kneeAngle + bodyAngle) - 180, -1, 0, 0);
 			leg.draw(shadow);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslatef(feet.position.x, feet.position.y, feet.position.z);
-			glRotatef(90, 1, 0, 0);
+			glRotatef(toDeg(kneeAngle + bodyAngle - ankleAngle) - 180, -1, 0, 0);
 			glRotatef(90, 0, 1, 0);
 			feet.draw(shadow);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslatef(toe.position.x, toe.position.y, toe.position.z);
-			glRotatef(90, 1, 0, 0);
+			glRotatef(toDeg(bodyAngle + kneeAngle - toeAngle - ankleAngle), -1, 0, 0);
 			glRotatef(90, 0, 1, 0);
 			toe.draw(shadow);
 			glPopMatrix();
