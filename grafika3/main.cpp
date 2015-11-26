@@ -959,45 +959,55 @@ struct Csirguru {
 		Vector pos = body.position;
 		if (exploded) pos = body.position + body.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
-			body.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
+				body.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = head.position;
 		if (exploded) pos = head.position + head.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			head.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				head.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = eyeLeft.position;
 		if (exploded) pos = eyeLeft.position + eyeLeft.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			eyeLeft.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				eyeLeft.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = eyeRight.position;
 		if (exploded) pos = eyeRight.position + eyeRight.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			eyeRight.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				eyeRight.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = beak.position;
 		if (exploded) pos = beak.position + beak.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, beak.spinAxis.x, beak.spinAxis.y, beak.spinAxis.z);
-			glRotatef(90, 1, 0, 0);
-			beak.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, beak.spinAxis.x, beak.spinAxis.y, beak.spinAxis.z);
+				glRotatef(90, 1, 0, 0);
+				beak.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = comb1.position;
 		if (exploded) pos = comb1.position + comb1.getProjectileMotionPos(dt);
@@ -1030,62 +1040,72 @@ struct Csirguru {
 		pos = thigh.position;
 		if (exploded) pos = thigh.position + thigh.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, thigh.spinAxis.x, thigh.spinAxis.y, thigh.spinAxis.z);
-			thigh.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, thigh.spinAxis.x, thigh.spinAxis.y, thigh.spinAxis.z);
+				thigh.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = leg.position;
 		if (exploded) pos = leg.position + leg.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, leg.spinAxis.x, leg.spinAxis.y, leg.spinAxis.z);
-			if (toeAnchored) {
-				glRotatef(toDeg(toeAngle + ankleAngle) - 270, -1, 0, 0);
-			}
-			else {
-				glRotatef(toDeg(kneeAngle) - 180, -1, 0, 0);
-			}
-			leg.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, leg.spinAxis.x, leg.spinAxis.y, leg.spinAxis.z);
+				if (toeAnchored) {
+					glRotatef(toDeg(toeAngle + ankleAngle) - 270, -1, 0, 0);
+				}
+				else {
+					glRotatef(toDeg(kneeAngle) - 180, -1, 0, 0);
+				}
+				leg.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = feet.position;
 		if (exploded) pos = feet.position + feet.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, feet.spinAxis.x, feet.spinAxis.y, feet.spinAxis.z);
-			if (toeAnchored) {
-				glRotatef(toDeg(toeAngle) - 90, -1, 0, 0);
-			}
-			else {
-				glRotatef(toDeg(kneeAngle - ankleAngle) - 180, -1, 0, 0);
-			}
-			glRotatef(90, 0, 1, 0);
-			feet.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, feet.spinAxis.x, feet.spinAxis.y, feet.spinAxis.z);
+				if (toeAnchored) {
+					glRotatef(toDeg(toeAngle) - 90, -1, 0, 0);
+				}
+				else {
+					glRotatef(toDeg(kneeAngle - ankleAngle) - 180, -1, 0, 0);
+				}
+				glRotatef(90, 0, 1, 0);
+				feet.draw(shadow);
+			} glPopMatrix();
+		}
 
 		pos = toe.position;
 		if (exploded) pos = toe.position + toe.getProjectileMotionPos(dt);
 
-		glPushMatrix(); {
-			glTranslatef(pos.x, pos.y, pos.z);
-			if (exploded) glRotatef(360.0f * dt, toe.spinAxis.x, toe.spinAxis.y, toe.spinAxis.z);
-			if (toeAnchored) {
-				glRotatef(-90, -1, 0, 0);
-			}
-			else {
-				glRotatef(toDeg(kneeAngle - toeAngle - ankleAngle), -1, 0, 0);
-			}
-			glRotatef(90, 0, 1, 0);
-			toe.draw(shadow);
-		} glPopMatrix();
+		if (pos.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, toe.spinAxis.x, toe.spinAxis.y, toe.spinAxis.z);
+				if (toeAnchored) {
+					glRotatef(-90, -1, 0, 0);
+				}
+				else {
+					glRotatef(toDeg(kneeAngle - toeAngle - ankleAngle), -1, 0, 0);
+				}
+				glRotatef(90, 0, 1, 0);
+				toe.draw(shadow);
+			} glPopMatrix();
+		}
 	}
 
 private:
 	void drawComb(CsirguruComb& comb, Vector& pos, int angle, float dt, bool shadow) {
+		if (pos.y < 0) return;
+
 		glPushMatrix(); {
 			glTranslatef(pos.x, pos.y, pos.z);
 			if (exploded) glRotatef(360.0f * dt, comb.spinAxis.x, comb.spinAxis.y, comb.spinAxis.z);
