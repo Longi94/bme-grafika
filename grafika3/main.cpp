@@ -541,11 +541,9 @@ struct Object {
 
 	Vector getProjectileMotionPos(float t) {
 
-		float secs = t;
+		float y = velocity * t * sinf(angle) - GRAVITY / 2.0 * t * t;
 
-		float y = velocity * secs * sinf(angle) - GRAVITY / 2.0 * secs * secs;
-
-		float d = velocity * secs * cosf(angle);
+		float d = velocity * t * cosf(angle);
 
 		return Vector(sinf(directionAngle) * d, y, cosf(directionAngle) * d);
 	}
@@ -870,7 +868,7 @@ struct Csirguru {
 
 	Vector position, jumpOrigin;
 
-	bool toeAnchored, exploded;
+	bool toeAnchored, exploded, jumping;
 	float kneeAngle, ankleAngle, toeAngle;
 	long timeOfExplosion, timeOfJump;
 
@@ -879,27 +877,35 @@ struct Csirguru {
 
 	float animAccelerateAnkleStart, animAccelerateAnkleEnd, animAccelerateToeStart, animAccelerateToeEnd;
 
+	float velocity;
+
 	Csirguru() {
 		position = Vector();
 		toeAnchored = true;
 		exploded = false;
+		jumping = false;
 
 		kneeAngle = toRad(135);
 		ankleAngle = toRad(90);
 		toeAngle = toRad(135);
 
 		animPrepareDuration = 500;
-		animAccelerateDuration = 750;
+		animAccelerateDuration = 400;
 
-		animPerpareAnkleStart = 90;
+		//animPerpareAnkleStart = 90;
+		animPerpareAnkleStart = 180;
 		animPerpareAnkleEnd = 30;
-		animPrepareToeStart = 135;
+		//animPrepareToeStart = 135;
+		animPrepareToeStart = 90;
 		animPrepareToeEnd = 165;
 
 		animAccelerateAnkleStart = 30;
 		animAccelerateAnkleEnd = 180;
 		animAccelerateToeStart = 165;
 		animAccelerateToeEnd = 90;
+
+		float bodyAccel = 2 * 1.186f / powf(animAccelerateDuration / 1000.0f, 2);
+		velocity = bodyAccel * animAccelerateDuration / 1000.0f;
 	}
 
 	void explode(Vector center, long t) {
@@ -932,15 +938,16 @@ struct Csirguru {
 	}
 
 	void animateValues(long t) {
-		if (t > timeOfJump + animPrepareDuration + animAccelerateDuration) {
+		if (!jumping) {
 			timeOfJump = t;
 			jumpOrigin = position;
+			jumping = true;
 			return;
 		}
 
 		float dt = t - timeOfJump;
 
-		if (dt < animPrepareDuration) {
+		if (dt <= animPrepareDuration) {
 			float d = (float)dt / (float)animPrepareDuration;
 
 			ankleAngle = (animPerpareAnkleEnd - animPerpareAnkleStart) * d + animPerpareAnkleStart;
@@ -952,7 +959,7 @@ struct Csirguru {
 		}
 
 		dt -= animPrepareDuration;
-		if (dt < animAccelerateDuration) {
+		if (dt <= animAccelerateDuration) {
 
 			float ankleAccel = 2 * (animAccelerateAnkleEnd - animAccelerateAnkleStart) / powf(animAccelerateDuration / 1000.0f, 2);
 			float toeAccel = 2 * (animAccelerateToeEnd - animAccelerateToeStart) / powf(animAccelerateDuration / 1000.0f, 2);
@@ -964,6 +971,27 @@ struct Csirguru {
 			toeAngle = toRad(toeAngle);
 			return;
 		}
+
+		dt -= animAccelerateDuration - 15;
+		if (toeAnchored) {
+			toeAnchored = false;
+			position = body.position;
+			jumpOrigin = position;
+		}
+
+		Vector projectilePos = jumpOrigin + getProjectileMotionPos(dt / 1000.0f);
+		if (projectilePos.y >= jumpOrigin.y) {
+			kneeAngle = M_PI;
+			ankleAngle = M_PI;
+			toeAngle = M_PI / 2;
+			position = projectilePos;
+			return;
+		}
+
+		toeAnchored = true;
+		position.x = position.y = position.z = 0;
+
+		jumping = false;
 	}
 
 	void draw(long t, bool shadow) {
@@ -1165,6 +1193,12 @@ private:
 			glRotatef(angle, 1, 0, 0);
 			comb1.draw(shadow);
 		} glPopMatrix();
+	}
+
+	Vector getProjectileMotionPos(float t) {
+		float y = velocity * t * sinf(M_PI / 2) - GRAVITY / 2.0 * t * t;
+		float d = velocity * t * cosf(M_PI / 2);
+		return Vector(sinf(0) * d, y, cosf(0) * d);
 	}
 };
 
