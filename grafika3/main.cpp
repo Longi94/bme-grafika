@@ -889,7 +889,7 @@ struct Csirguru {
 		toeAngle = toRad(135);
 
 		animPrepareDuration = 500;
-		animAccelerateDuration = 1000;
+		animAccelerateDuration = 750;
 
 		animPerpareAnkleStart = 90;
 		animPerpareAnkleEnd = 30;
@@ -953,13 +953,12 @@ struct Csirguru {
 
 		dt -= animPrepareDuration;
 		if (dt < animAccelerateDuration) {
-			float d = (float)dt / (float)animAccelerateDuration;
 
-			float ankleAccel = 2 * (animAccelerateAnkleEnd - animAccelerateAnkleStart) / (animAccelerateDuration*animAccelerateDuration / 1000.0f / 1000.0f);
-			float toeAccel = 2 * (animAccelerateToeEnd - animAccelerateToeStart) / (animAccelerateDuration*animAccelerateDuration / 1000.0f / 1000.0f);
+			float ankleAccel = 2 * (animAccelerateAnkleEnd - animAccelerateAnkleStart) / powf(animAccelerateDuration / 1000.0f, 2);
+			float toeAccel = 2 * (animAccelerateToeEnd - animAccelerateToeStart) / powf(animAccelerateDuration / 1000.0f, 2);
 
-			ankleAngle = ankleAccel / 2.0f * d * d + animAccelerateAnkleStart;
-			toeAngle = toeAccel / 2.0f * d * d + animAccelerateToeStart;
+			ankleAngle = ankleAccel / 2.0f * powf((float)dt / 1000.0f, 2) + animAccelerateAnkleStart;
+			toeAngle = toeAccel / 2.0f * powf((float)dt / 1000.0f, 2) + animAccelerateToeStart;
 
 			ankleAngle = toRad(ankleAngle);
 			toeAngle = toRad(toeAngle);
