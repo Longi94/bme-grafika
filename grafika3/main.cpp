@@ -1344,7 +1344,6 @@ struct Scene {
 
 		glPushMatrix();
 		glTranslatef(50, 2.8f, 50);
-		glRotatef(30, 0, 1, 0);
 		testCs.draw(t, true);
 		glPopMatrix();
 	}
