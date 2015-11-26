@@ -538,11 +538,11 @@ struct Object {
 	float angle;
 	float velocity;
 
-	virtual void draw(bool shadow) = 0;
+	void draw(bool shadow);
 
-	Vector getProjectileMotionPos(long t) {
+	Vector getProjectileMotionPos(float t) {
 
-		float secs = (float)t / 1000;
+		float secs = t;
 
 		float y = velocity * secs * sinf(angle) - GRAVITY / 2.0 * secs * secs;
 
@@ -888,69 +888,29 @@ struct Csirguru {
 		timeOfExplosion = t;
 		exploded = true;
 
-		body.angle = toRad(90);
-		body.directionAngle = toRad(90);
-		body.velocity = 10;
+		randomizeProjectile(body);
+		randomizeProjectile(thigh);
+		randomizeProjectile(leg);
+		randomizeProjectile(feet);
+		randomizeProjectile(toe);
+		randomizeProjectile(head);
+		randomizeProjectile(eyeLeft);
+		randomizeProjectile(eyeRight);
+		randomizeProjectile(beak);
+		randomizeProjectile(comb1);
+		randomizeProjectile(comb2);
+		randomizeProjectile(comb3);
+		randomizeProjectile(comb4);
+		randomizeProjectile(comb5);
+		randomizeProjectile(comb6);
+		randomizeProjectile(comb7);
+	}
 
-		thigh.angle = toRad(60);
-		thigh.directionAngle = toRad(0);
-		thigh.velocity = 10;
-
-		leg.angle = toRad(60);
-		leg.directionAngle = toRad(0);
-		leg.velocity = 10;
-
-		feet.angle = toRad(60);
-		feet.directionAngle = toRad(0);
-		feet.velocity = 10;
-
-		toe.angle = toRad(60);
-		toe.directionAngle = toRad(0);
-		toe.velocity = 10;
-
-		head.angle = toRad(60);
-		head.directionAngle = toRad(0);
-		head.velocity = 10;
-
-		eyeLeft.angle = toRad(60);
-		eyeLeft.directionAngle = toRad(0);
-		eyeLeft.velocity = 10;
-
-		eyeRight.angle = toRad(60);
-		eyeRight.directionAngle = toRad(0);
-		eyeRight.velocity = 10;
-
-		beak.angle = toRad(60);
-		beak.directionAngle = toRad(0);
-		beak.velocity = 10;
-
-		comb1.angle = toRad(60);
-		comb1.directionAngle = toRad(0);
-		comb1.velocity = 10;
-
-		comb2.angle = toRad(60);
-		comb2.directionAngle = toRad(0);
-		comb2.velocity = 10;
-
-		comb3.angle = toRad(60);
-		comb3.directionAngle = toRad(0);
-		comb3.velocity = 10;
-
-		comb4.angle = toRad(60);
-		comb4.directionAngle = toRad(0);
-		comb4.velocity = 10;
-
-		comb5.angle = toRad(60);
-		comb5.directionAngle = toRad(0);
-		comb5.velocity = 10;
-
-		comb6.angle = toRad(60);
-		comb6.directionAngle = toRad(0);
-		comb6.velocity = 10;
-
-		comb7.angle = toRad(60);
-		comb7.directionAngle = toRad(0);
-		comb7.velocity = 10;
+	void randomizeProjectile(Object& obj) {
+		obj.angle = toRad(rand() % 45 + 45);
+		obj.directionAngle = toRad(rand() % 360);
+		obj.velocity = rand() % 5 + 5;
+		obj.spinAxis = Vector((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
 	}
 
 	void draw(long t, bool shadow) {
@@ -1080,112 +1040,159 @@ struct Csirguru {
 		}
 		else {
 
-			Vector pos = body.position + body.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			body.draw(shadow);
-			glPopMatrix();
+			float dt = (t - timeOfExplosion) / 1000.0f;
 
-			pos = head.position + head.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			head.draw(shadow);
-			glPopMatrix();
+			Vector pos = body.position + body.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
+				body.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = eyeLeft.position + eyeLeft.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			eyeLeft.draw(shadow);
-			glPopMatrix();
+			pos = head.position + head.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				head.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = eyeRight.position + eyeRight.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			eyeRight.draw(shadow);
-			glPopMatrix();
+			pos = eyeLeft.position + eyeLeft.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				eyeLeft.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = beak.position + beak.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(90, 1, 0, 0);
-			beak.draw(shadow);
-			glPopMatrix();
+			pos = eyeRight.position + eyeRight.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				eyeRight.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb1.position + comb1.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(45, 1, 0, 0);
-			comb1.draw(shadow);
-			glPopMatrix();
+			pos = beak.position + beak.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, beak.spinAxis.x, beak.spinAxis.y, beak.spinAxis.z);
+				glRotatef(90, 1, 0, 0);
+				beak.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb2.position + comb2.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(30, 1, 0, 0);
-			comb2.draw(shadow);
-			glPopMatrix();
+			pos = comb1.position + comb1.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb1.spinAxis.x, comb1.spinAxis.y, comb1.spinAxis.z);
+				glRotatef(45, 1, 0, 0);
+				comb1.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb3.position + comb3.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(15, 1, 0, 0);
-			comb3.draw(shadow);
-			glPopMatrix();
+			pos = comb2.position + comb2.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb2.spinAxis.x, comb2.spinAxis.y, comb2.spinAxis.z);
+				glRotatef(30, 1, 0, 0);
+				comb2.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb4.position + comb4.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			comb4.draw(shadow);
-			glPopMatrix();
+			pos = comb3.position + comb3.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb3.spinAxis.x, comb3.spinAxis.y, comb3.spinAxis.z);
+				glRotatef(15, 1, 0, 0);
+				comb3.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb5.position + comb5.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(-15, 1, 0, 0);
-			comb5.draw(shadow);
-			glPopMatrix();
+			pos = comb4.position + comb4.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb4.spinAxis.x, comb4.spinAxis.y, comb4.spinAxis.z);
+				comb4.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb6.position + comb6.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(-30, 1, 0, 0);
-			comb6.draw(shadow);
-			glPopMatrix();
+			pos = comb5.position + comb5.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb5.spinAxis.x, comb5.spinAxis.y, comb5.spinAxis.z);
+				glRotatef(-15, 1, 0, 0);
+				comb5.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = comb7.position + comb7.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(-45, 1, 0, 0);
-			comb7.draw(shadow);
-			glPopMatrix();
+			pos = comb6.position + comb6.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb6.spinAxis.x, comb6.spinAxis.y, comb6.spinAxis.z);
+				glRotatef(-30, 1, 0, 0);
+				comb6.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = thigh.position + thigh.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			thigh.draw(shadow);
-			glPopMatrix();
+			pos = comb7.position + comb7.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, comb7.spinAxis.x, comb7.spinAxis.y, comb7.spinAxis.z);
+				glRotatef(-45, 1, 0, 0);
+				comb7.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = leg.position + leg.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			leg.draw(shadow);
-			glPopMatrix();
+			pos = thigh.position + thigh.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, thigh.spinAxis.x, thigh.spinAxis.y, thigh.spinAxis.z);
+				thigh.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = feet.position + feet.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(90, 1, 0, 0);
-			glRotatef(90, 0, 1, 0);
-			feet.draw(shadow);
-			glPopMatrix();
+			pos = leg.position + leg.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, leg.spinAxis.x, leg.spinAxis.y, leg.spinAxis.z);
+				leg.draw(shadow);
+				glPopMatrix();
+			//}
 
-			pos = toe.position + toe.getProjectileMotionPos(t - timeOfExplosion);
-			glPushMatrix();
-			glTranslatef(pos.x, pos.y, pos.z);
-			glRotatef(90, 1, 0, 0);
-			glRotatef(90, 0, 1, 0);
-			toe.draw(shadow);
-			glPopMatrix();
+			pos = feet.position + feet.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, feet.spinAxis.x, feet.spinAxis.y, feet.spinAxis.z);
+				glRotatef(90, 1, 0, 0);
+				glRotatef(90, 0, 1, 0);
+				feet.draw(shadow);
+				glPopMatrix();
+			//}
+
+			pos = toe.position + toe.getProjectileMotionPos(dt);
+			//if (pos.y >= 0) {
+				glPushMatrix();
+				glTranslatef(pos.x, pos.y, pos.z);
+				glRotatef(360.0f * dt, toe.spinAxis.x, toe.spinAxis.y, toe.spinAxis.z);
+				glRotatef(90, 1, 0, 0);
+				glRotatef(90, 0, 1, 0);
+				toe.draw(shadow);
+				glPopMatrix();
+			//}
 		}
 	}
 };
@@ -1305,7 +1312,7 @@ struct Scene {
 		glPopMatrix();
 
 		glPushMatrix();
-		glTranslatef(50, 5, 50);
+		glTranslatef(50, 2.8f, 50);
 		testCs.draw(t, false);
 		glPopMatrix();
 
@@ -1326,7 +1333,7 @@ struct Scene {
 		glColor3f(0, 0, 0);
 
 		glPushMatrix();
-		glTranslatef(50, 5, 50);
+		glTranslatef(50, 2.8f, 50);
 		glRotatef(30, 0, 1, 0);
 		testCs.draw(t, true);
 		glPopMatrix();
