@@ -67,9 +67,11 @@ using namespace std;
 static const int MAX_CSIRGURU_COUNT = 10;
 
 static const float HEAD_RADIUS = 0.5f;
-
 static const float EPSILON = 0.001f;
 static const float GRAVITY = 9.81f;
+
+static const float SUN_LIGHT_DIR[] = { -0.7f, 1, 1, 0 };
+static const float SUN_LIGHT_COLOR[] = { 1, 1, 1, 1 };
 
 struct Vector {
 	float x, y, z;
@@ -676,26 +678,35 @@ struct CsirguruBody : public Object {
 			glColor3f(0.9f, 0.9f, 0.9f);
 		}
 
+		CatmullRom cm1;
+		CatmullRom cm2;
+
+		CatmullRom cmNormal1;
+		CatmullRom cmNormal2;
+
 		for (float tb = 0; tb < 1; tb += bstep) {
 
 			//TODO optimize mindent kétszer számol
 			glBegin(GL_TRIANGLE_STRIP);
 
-			CatmullRom cm1 = CatmullRom();
-			CatmullRom cm2 = CatmullRom();
+			cm1 = tb > 0 ? cm2 : CatmullRom();
+			cm2 = CatmullRom();
 
 			for (int i = 0; i < BEZIER_COUNT; i++)
 			{
-				cm1.addControlPoint(bezier[i].getBezierCruvePoint(tb), t[i]);
+				if (tb == 0) {
+					cm1.addControlPoint(bezier[i].getBezierCruvePoint(tb), t[i]);
+				}
 				cm2.addControlPoint(bezier[i].getBezierCruvePoint(tb + bstep), t[i]);
 			}
 
-			CatmullRom cmNormal1 = CatmullRom();
-			CatmullRom cmNormal2 = CatmullRom();
-
+			cmNormal1 = tb > 0 ? cmNormal2 : CatmullRom();
+			cmNormal2 = CatmullRom();
 			for (int i = 0; i < BEZIER_COUNT; i++)
 			{
-				cmNormal1.addControlPoint(bezier[i].getDerivative(tb) % cm1.getDerivative(i, t[i] - EPSILON), t[i]);
+				if (tb == 0) {
+					cmNormal1.addControlPoint(bezier[i].getDerivative(tb) % cm1.getDerivative(i, t[i] - EPSILON), t[i]);
+				}
 				cmNormal2.addControlPoint(bezier[i].getDerivative(tb + bstep) % cm2.getDerivative(i, t[i] - EPSILON), t[i]);
 			}
 
@@ -703,12 +714,18 @@ struct CsirguruBody : public Object {
 			{
 				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 4.0f;
 
-				for (float t = cm1.getT(i); t <= cm1.getT(i + 1); t += step) {
-					Vector cmPoint1 = cm1.getHermiteCurvePoint(i, t);
-					Vector cmPoint2 = cm2.getHermiteCurvePoint(i, t);
+				Vector cmPoint1;
+				Vector cmPoint2;
 
-					Vector normal1 = cmNormal1.getHermiteCurvePoint(i, t);
-					Vector normal2 = cmNormal2.getHermiteCurvePoint(i, t);
+				Vector normal1;
+				Vector normal2;
+
+				for (float t = cm1.getT(i); t <= cm1.getT(i + 1); t += step) {
+					cmPoint1 = cm1.getHermiteCurvePoint(i, t);
+					cmPoint2 = cm2.getHermiteCurvePoint(i, t);
+
+					normal1 = cmNormal1.getHermiteCurvePoint(i, t);
+					normal2 = cmNormal2.getHermiteCurvePoint(i, t);
 
 					glNormal3f(normal1.x, normal1.y, normal1.z);
 					glVertex3f(cmPoint1.x, cmPoint1.y, cmPoint1.z);
@@ -768,11 +785,11 @@ struct CsirguruLeg : public Object {
 	CsirguruLeg() {
 		leg.r = 0.2f;
 		leg.m = 0.8f;
-		leg.slices = 16;
+		leg.slices = 8;
 
 		joint.r = 0.2f;
-		joint.slices = 16;
-		joint.stacks = 16;
+		joint.slices = 8;
+		joint.stacks = 8;
 	}
 
 	void draw(bool shadow) {
@@ -835,8 +852,8 @@ struct CsirguruHead : public Object {
 
 	CsirguruHead() {
 		head.r = HEAD_RADIUS;
-		head.slices = 20;
-		head.stacks = 20;
+		head.slices = 16;
+		head.stacks = 16;
 	}
 
 	void explode(Vector center) {
@@ -880,7 +897,7 @@ struct Csirguru {
 	float animInAirAnkleStart, animInAirAnkleEnd, animInAirToeStart, animInAirToeEnd;
 	float animDecelerateAnkleStart, animDecelerateAnkleEnd;
 
-	float velocity, minTimeInAir, jumpAngle;
+	float volatile velocity, minTimeInAir, jumpAngle;
 
 	Csirguru() {
 		position = Vector();
@@ -905,11 +922,11 @@ struct Csirguru {
 		animAccelerateKneeStart = 0.414f;
 		animAccelerateKneeEnd = 1.6f;
 
+		jumpAngle = 2 * M_PI / 3;
+
 		float bodyAccel = 2 * 1.186f / powf(animAccelerateDuration / 1000.0f, 2);
 		velocity = bodyAccel * animAccelerateDuration / 1000.0f;
 		minTimeInAir = (2 * velocity * sinf(jumpAngle)) / GRAVITY * 1000.0f;
-
-		jumpAngle = 2 * M_PI / 3;
 
 		animInAirAnkleStart = 180;
 		animInAirAnkleEnd = 105;
@@ -1000,12 +1017,10 @@ struct Csirguru {
 		if (toeP.y >= 0 && !landed || dt < minTimeInAir) {
 			position = projectilePos;
 
-			float d = fminf(dt, minTimeInAir) / minTimeInAir;
-
 			kneeAngle = M_PI;
 
-			ankleAngle = (animInAirAnkleEnd - animInAirAnkleStart) * d + animInAirAnkleStart;
-			toeAngle = (animInAirToeEnd - animInAirToeStart) * d + animInAirToeStart;
+			ankleAngle = (animInAirAnkleEnd - animInAirAnkleStart) * fminf(dt, minTimeInAir) / minTimeInAir + animInAirAnkleStart;
+			toeAngle = (animInAirToeEnd - animInAirToeStart) * fminf(dt, minTimeInAir) / minTimeInAir + animInAirToeStart;
 
 			ankleAngle = toRad(ankleAngle);
 			toeAngle = toRad(toeAngle);
@@ -1279,25 +1294,14 @@ struct Field {
 		glColor3f(1, 1, 1);
 		glNormal3f(0, 1, 0);
 
-		float step = 1;
-
-		for (float i = 0; i < 100; i += step)
-		{
-			for (float j = 0; j < 100; j += step)
-			{
-				glTexCoord2f(i / 100.0f, j / 100.0f);
-				glVertex3f(i, 0, j);
-
-				glTexCoord2f((i + step) / 100.0f, j / 100.0f);
-				glVertex3f(i + step, 0, j);
-
-				glTexCoord2f((i + step) / 100.0f, (j + step) / 100.0f);
-				glVertex3f(i + step, 0, j + step);
-
-				glTexCoord2f(i / 100.0f, (j + step) / 100.0f);
-				glVertex3f(i, 0, j + step);
-			}
-		}
+		glTexCoord2f(1, 1);
+		glVertex3f(50, 0, 50);
+		glTexCoord2f(1, 0);
+		glVertex3f(50, 0, -50);
+		glTexCoord2f(0, 0);
+		glVertex3f(-50, 0, -50);
+		glTexCoord2f(0, 1);
+		glVertex3f(-50, 0, 50);
 
 		glEnd();
 
@@ -1355,8 +1359,6 @@ struct CsirguruLinkedList {
 };
 
 struct Scene {
-	static const Vector SUN_LIGHT;
-
 	CsirguruLinkedList* first;
 	CsirguruLinkedList* last;
 	
@@ -1364,8 +1366,6 @@ struct Scene {
 
 	Field field;
 
-	float lightColor[4];
-	float lightDir[4];
 	//Camera camera;
 
 	Scene() {
@@ -1377,15 +1377,6 @@ struct Scene {
 	}
 
 	void init() {
-		lightColor[0] = 1;
-		lightColor[1] = 1;
-		lightColor[2] = 1;
-		lightColor[3] = 1;
-
-		lightDir[0] = -0.7f;
-		lightDir[1] = 1;
-		lightDir[2] = 1;
-		lightDir[3] = 0;
 	}
 
 	void render(long t) {
@@ -1394,8 +1385,8 @@ struct Scene {
 
 		camera.applyMatrix();
 
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, lightColor);
-		glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
+		glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
 		glEnable(GL_LIGHT0);
 
 		glPushMatrix();
@@ -1410,7 +1401,7 @@ struct Scene {
 
 		float shadow[4][4] = {
 			1, 0, 0, 0,
-			-lightDir[0] / lightDir[1], 0, -lightDir[2] / lightDir[1], 0,
+			-SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0,
 			0, 0, 1, 0,
 			0, EPSILON, 0, 1
 		};
@@ -1451,8 +1442,6 @@ struct Scene {
 	}
 };
 
-const Vector Scene::SUN_LIGHT = Vector();
-
 Color image[Camera::XM*Camera::YM];
 Scene scene;
 
@@ -1487,8 +1476,8 @@ void onInitialization() {
 		//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
 	//Irányfényforrás
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, scene.lightColor);
-	glLightfv(GL_LIGHT0, GL_POSITION, scene.lightDir);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
+	glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
 	glEnable(GL_LIGHT0);
 
 	glEnable(GL_SMOOTH);
@@ -1497,7 +1486,7 @@ void onInitialization() {
 long elapsedTime = 0;
 
 void onDisplay() {
-	glClearColor(0, 0, 0, 1.0f);
+	glClearColor(0.5f, 0.8f, 1, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	scene.render(elapsedTime);
 	glutSwapBuffers();
