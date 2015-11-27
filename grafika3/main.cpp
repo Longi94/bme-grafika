@@ -45,6 +45,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
+using namespace std;
 
 #if defined(__APPLE__)                                                                                                                                                                                                            
 #include <OpenGL/gl.h>                                                                                                                                                                                                            
@@ -63,9 +64,13 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
-//--------------------------------------------------------
-// 3D Vektor
-//--------------------------------------------------------
+static const int MAX_CSIRGURU_COUNT = 10;
+
+static const float HEAD_RADIUS = 0.5f;
+
+static const float EPSILON = 0.001f;
+static const float GRAVITY = 9.81f;
+
 struct Vector {
 	float x, y, z;
 
@@ -133,9 +138,6 @@ float toDeg(float rad) {
 	return rad * (180.0f / M_PI);
 }
 
-float EPSILON = 0.001f;
-float GRAVITY = 9.81f;
-
 /*struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
@@ -156,7 +158,7 @@ struct Camera {
 	Vector fwd, pos;
 	const float speed, mouse_speed;
 
-	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, -0.5f, -1).norm()), pos(55, 5, 55), speed(speed), mouse_speed(mouse_speed) { }
+	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, -0.5f, -1).norm()), pos(5, 5, 5), speed(speed), mouse_speed(mouse_speed) { }
 
 	void updatePos(float dt) {
 		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
@@ -548,8 +550,6 @@ struct Object {
 		return Vector(sinf(directionAngle) * d, y, cosf(directionAngle) * d);
 	}
 };
-
-static const float HEAD_RADIUS = 0.5f;
 
 //a CSIRGURU szeme
 struct CsirguruEye : public Object {
@@ -1340,12 +1340,27 @@ struct Field {
 	}
 };
 
+struct CsirguruLinkedList {
+	Csirguru csirguru;
+
+	CsirguruLinkedList* next;
+	CsirguruLinkedList* previous;
+
+	CsirguruLinkedList() {
+		next = 0;
+		previous = 0;
+
+		csirguru = Csirguru();
+	}
+};
+
 struct Scene {
 	static const Vector SUN_LIGHT;
 
-	Csirguru* csirgurus; //láncolt lista kéne
-
-	Csirguru testCs;
+	CsirguruLinkedList* first;
+	CsirguruLinkedList* last;
+	
+	int csirguruCount = 0;
 
 	Field field;
 
@@ -1354,8 +1369,10 @@ struct Scene {
 	//Camera camera;
 
 	Scene() {
+		first = 0;
+		last = 0;
+
 		field = Field();
-		testCs = Csirguru();
 		//camera = Camera();
 	}
 
@@ -1385,10 +1402,11 @@ struct Scene {
 		field.draw();
 		glPopMatrix();
 
-		glPushMatrix();
-		glTranslatef(50, 0, 50);
-		testCs.draw(t, false);
-		glPopMatrix();
+		CsirguruLinkedList* current = first;
+		while (current != 0) {
+			current->csirguru.draw(t, false);
+			current = current->next;
+		}
 
 		float shadow[4][4] = {
 			1, 0, 0, 0,
@@ -1400,14 +1418,32 @@ struct Scene {
 		glDisable(GL_LIGHT0);
 		glDisable(GL_LIGHT1);
 
-		glPushMatrix();
-		glTranslatef(50, 0, 50);
-		testCs.draw(t, true);
-		glPopMatrix();
+		CsirguruLinkedList* currentShadow = first;
+		while (currentShadow != 0) {
+			currentShadow->csirguru.draw(t, true);
+			currentShadow = currentShadow->next;
+		}
 	}
 
-	void addCsirguru(Vector pos) {
+	void addCsirguru() {
+		if (csirguruCount == MAX_CSIRGURU_COUNT) {
+			cout << "csirguru full" << endl;
+			return;
+		}
 
+		csirguruCount++;
+
+		if (first == 0) {
+			first = new CsirguruLinkedList();
+			last = first;
+		}
+		else {
+			last->next = new CsirguruLinkedList();
+			last->next->previous = last;
+			last = last->next;
+		}
+
+		cout << "csirguru added, count: " << csirguruCount << endl;
 	}
 
 	void dropBomb(Vector pos) {
@@ -1419,6 +1455,8 @@ const Vector Scene::SUN_LIGHT = Vector();
 
 Color image[Camera::XM*Camera::YM];
 Scene scene;
+
+int csirgurusAdded = 0;
 
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
@@ -1511,11 +1549,6 @@ void onKeyboard(unsigned char key, int x, int y) {
 		break;
 	case ' ':
 		elapsedTime = glutGet(GLUT_ELAPSED_TIME);
-		if (!randomInit) {
-			randomInit = true;
-			srand(elapsedTime);
-		}
-		scene.testCs.explode(Vector(), elapsedTime);
 		break;
 	}
 }
@@ -1556,12 +1589,14 @@ void onMouseMotion(int x, int y) {
 }
 
 void onIdle() {
-	static float last_time = glutGet(GLUT_ELAPSED_TIME);
 	float time = glutGet(GLUT_ELAPSED_TIME);
-	float dt = (time - last_time) / 1000.0f;
-	last_time = time;
+	float dt = (time - elapsedTime) / 1000.0f;
 
 	elapsedTime = time;
+	if (time > csirgurusAdded * 1000) {
+		scene.addCsirguru();
+		csirgurusAdded++;
+	}
 
 	camera.updatePos(dt);
 	glutPostRedisplay();
