@@ -868,6 +868,8 @@ struct Csirguru {
 
 	Vector position, jumpOrigin;
 
+	float faceDirection;
+
 	bool toeAnchored, exploded, jumping, landed;
 	float kneeAngle, ankleAngle, toeAngle;
 	long timeOfExplosion, timeOfJump, timeOfLanding;
@@ -949,6 +951,7 @@ struct Csirguru {
 
 	void animateValues(long t) {
 		if (!jumping) {
+			faceDirection = rand() % 360;
 			timeOfJump = t;
 			jumpOrigin = position;
 			jumping = true;
@@ -986,7 +989,7 @@ struct Csirguru {
 		if (toeAnchored && !landed) {
 			toeAnchored = false;
 			body.position.y = 3.2f;
-			position = body.position;
+			position = position + body.position;
 			jumpOrigin = position;
 		}
 
@@ -1018,8 +1021,8 @@ struct Csirguru {
 
 		if (!toeAnchored) {
 			toeAnchored = true;
-			toe.position.y = 0;
-			position = toe.position;
+			position.y = 0;
+			position = position + Vector(sinf(toRad(faceDirection)) * toe.position.z, 0, cosf(toRad(faceDirection)) * toe.position.z);
 		}
 
 		dt = t - timeOfLanding;
@@ -1057,14 +1060,14 @@ struct Csirguru {
 			animateValues(t);
 
 			if (toeAnchored) {
-				toe.position = position;
+				toe.position = Vector();
 				feet.position = toe.position;
 				leg.position = feet.position + Vector(0, sinf(toeAngle) * feet.feet.m, cosf(toeAngle) * feet.feet.m);
 				thigh.position = leg.position + Vector(0, cosf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m, sinf(3 * M_PI / 2 - toeAngle - ankleAngle) * leg.leg.m);
 				body.position = thigh.position + Vector(0, 1.6f, 0);
 			}
 			else {
-				body.position = position;
+				body.position = Vector();
 				thigh.position = body.position + Vector(0, -1.6f, 0);
 				leg.position = thigh.position + Vector(0, sinf(M_PI / 2 + kneeAngle) * leg.leg.m, cosf(M_PI / 2 + kneeAngle) * leg.leg.m);
 				feet.position = leg.position;
@@ -1091,12 +1094,16 @@ struct Csirguru {
 			comb7.position = Vector(head.position.x, head.position.y + sinf(comb7Angle) * (HEAD_RADIUS - 0.02f), head.position.z + cosf(comb7Angle) * (HEAD_RADIUS - 0.02f));
 		}
 
+		glPushMatrix();
+		glTranslatef(position.x, position.y, position.z);
+		glRotatef(faceDirection, 0, 1, 0);
+
 		float dt = (t - timeOfExplosion) / 1000.0f;
 
 		Vector pos = body.position;
 		if (exploded) pos = body.position + body.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
@@ -1107,7 +1114,7 @@ struct Csirguru {
 		pos = head.position;
 		if (exploded) pos = head.position + head.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				head.draw(shadow);
@@ -1117,7 +1124,7 @@ struct Csirguru {
 		pos = eyeLeft.position;
 		if (exploded) pos = eyeLeft.position + eyeLeft.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				eyeLeft.draw(shadow);
@@ -1127,7 +1134,7 @@ struct Csirguru {
 		pos = eyeRight.position;
 		if (exploded) pos = eyeRight.position + eyeRight.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				eyeRight.draw(shadow);
@@ -1137,7 +1144,7 @@ struct Csirguru {
 		pos = beak.position;
 		if (exploded) pos = beak.position + beak.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, beak.spinAxis.x, beak.spinAxis.y, beak.spinAxis.z);
@@ -1177,7 +1184,7 @@ struct Csirguru {
 		pos = thigh.position;
 		if (exploded) pos = thigh.position + thigh.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, thigh.spinAxis.x, thigh.spinAxis.y, thigh.spinAxis.z);
@@ -1188,7 +1195,7 @@ struct Csirguru {
 		pos = leg.position;
 		if (exploded) pos = leg.position + leg.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, leg.spinAxis.x, leg.spinAxis.y, leg.spinAxis.z);
@@ -1205,7 +1212,7 @@ struct Csirguru {
 		pos = feet.position;
 		if (exploded) pos = feet.position + feet.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, feet.spinAxis.x, feet.spinAxis.y, feet.spinAxis.z);
@@ -1223,7 +1230,7 @@ struct Csirguru {
 		pos = toe.position;
 		if (exploded) pos = toe.position + toe.getProjectileMotionPos(dt);
 
-		if (pos.y >= 0) {
+		if (pos.y + position.y >= 0) {
 			glPushMatrix(); {
 				glTranslatef(pos.x, pos.y, pos.z);
 				if (exploded) glRotatef(360.0f * dt, toe.spinAxis.x, toe.spinAxis.y, toe.spinAxis.z);
@@ -1240,11 +1247,13 @@ struct Csirguru {
 		else {
 			std::cout << pos.y << std::endl;
 		}
+
+		glPopMatrix();
 	}
 
 private:
 	void drawComb(CsirguruComb& comb, Vector& pos, int angle, float dt, bool shadow) {
-		if (pos.y < 0) return;
+		if (pos.y + position.y < 0) return;
 
 		glPushMatrix(); {
 			glTranslatef(pos.x, pos.y, pos.z);
@@ -1257,7 +1266,7 @@ private:
 	Vector getProjectileMotionPos(float t) {
 		float y = velocity * t * sinf(jumpAngle) - GRAVITY / 2.0 * t * t;
 		float d = velocity * t * cosf(jumpAngle);
-		return Vector(sinf(M_PI) * d, y, cosf(M_PI) * d);
+		return Vector(sinf(M_PI + toRad(faceDirection)) * d, y, cosf(M_PI + toRad(faceDirection)) * d);
 	}
 };
 
