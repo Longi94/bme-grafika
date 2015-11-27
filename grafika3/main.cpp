@@ -971,7 +971,7 @@ struct Csirguru {
 
 		dt -= animPrepareDuration;
 		if (dt <= animAccelerateDuration) {
-			std::cout << "accel";
+			std::cout << "accel" << dt;
 
 			float kneeAccel = 2 * (animAccelerateKneeEnd - animAccelerateKneeStart) / powf(animAccelerateDuration / 1000.0f, 2);
 
@@ -985,6 +985,7 @@ struct Csirguru {
 		dt -= animAccelerateDuration;
 		if (toeAnchored && !landed) {
 			toeAnchored = false;
+			body.position.y = 3.2f;
 			position = body.position;
 			jumpOrigin = position;
 		}
