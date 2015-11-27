@@ -69,6 +69,8 @@ static const int MAX_CSIRGURU_COUNT = 10;
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
 static const float GRAVITY = 9.81f;
+static const float CSIRGURU_FIELD_LIMIT = 15;
+static const float APPROX_JUMP_LENGTH = 4.2f;
 
 static const float SUN_LIGHT_DIR[] = { -0.7f, 1, 1, 0 };
 static const float SUN_LIGHT_COLOR[] = { 1, 1, 1, 1 };
@@ -160,7 +162,7 @@ struct Camera {
 	Vector fwd, pos;
 	const float speed, mouse_speed;
 
-	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(-1, -0.5f, -1).norm()), pos(5, 5, 5), speed(speed), mouse_speed(mouse_speed) { }
+	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(0, -0.5f, -1).norm()), pos(0, 10, 20), speed(speed), mouse_speed(mouse_speed) { }
 
 	void updatePos(float dt) {
 		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
@@ -968,7 +970,9 @@ struct Csirguru {
 
 	void animateValues(long t) {
 		if (!jumping) {
-			faceDirection = rand() % 360;
+			faceDirection = randomizeDirection();
+			cout << faceDirection << endl;
+			cout << position.x << ", " << position.y << ", " << position.z << endl;
 			timeOfJump = t;
 			jumpOrigin = position;
 			jumping = true;
@@ -1065,7 +1069,7 @@ struct Csirguru {
 
 	void draw(long t, bool shadow) {
 
-		if (!exploded) {
+		if (!exploded && !shadow) {
 
 			animateValues(t);
 
@@ -1275,6 +1279,144 @@ private:
 		float d = velocity * t * cosf(jumpAngle);
 		return Vector(sinf(M_PI + toRad(faceDirection)) * d, y, cosf(M_PI + toRad(faceDirection)) * d);
 	}
+
+	int randomizeDirection() {
+
+		if (position.x > CSIRGURU_FIELD_LIMIT || position.x < -CSIRGURU_FIELD_LIMIT || position.z > CSIRGURU_FIELD_LIMIT || position.z < -CSIRGURU_FIELD_LIMIT) {
+			cout << "OUTSIDE" << endl;
+			int alpha = toDeg(atanf(position.x / position.z));
+			if (position.x > 0) {
+				if (position.z > 0) {
+					return alpha + 180;
+				}
+				else {
+					return alpha - 90;
+				}
+			}
+			else {
+				if (position.z > 0) {
+					return alpha + 90;
+				}
+				else {
+					return 90 - alpha;
+				}
+			}
+		}
+
+		if (position.x < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
+
+			float dx = CSIRGURU_FIELD_LIMIT + position.x;
+
+			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
+				cout << "ZONE 1" << endl;
+
+				float dz = CSIRGURU_FIELD_LIMIT + position.z;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+				int gamma = 270 - alpha - beta;
+
+				int angle = rand() % gamma;
+
+				return angle - (90 - alpha);
+			}
+			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH){
+				cout << "ZONE 2" << endl;
+
+				float dz = CSIRGURU_FIELD_LIMIT - position.z;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+				int gamma = 270 - alpha - beta;
+
+				int angle = rand() % gamma;
+
+				return angle + beta;
+			}
+			else {
+				cout << "ZONE 3" << endl;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+
+				int beta = 360 - 2 * alpha;
+
+				float angle = rand() % beta;
+
+				return angle - (beta / 2 - 90);
+			}
+		}
+		else if (position.x > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
+			float dx = CSIRGURU_FIELD_LIMIT - position.x;
+			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
+				cout << "ZONE 4" << endl;
+
+				float dz = CSIRGURU_FIELD_LIMIT + position.z;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+				int gamma = 270 - alpha - beta;
+
+				int angle = rand() % gamma;
+
+				return angle + 180 + beta;
+			}
+			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
+				cout << "ZONE 5" << endl;
+
+				float dz = CSIRGURU_FIELD_LIMIT - position.z;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+				int gamma = 270 - alpha - beta;
+
+				int angle = rand() % gamma;
+
+				return angle + 90 + alpha;
+			}
+			else {
+				cout << "ZONE 6" << endl;
+
+				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
+
+				int beta = 360 - 2 * alpha;
+
+				float angle = rand() % beta;
+
+				return angle + (270 - beta / 2);
+			}
+		} else if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
+			cout << "ZONE 7" << endl;
+
+			float dz = CSIRGURU_FIELD_LIMIT + position.z;
+
+			int alpha = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+			int beta = 360 - 2 * alpha;
+
+			float angle = rand() % beta;
+
+			return angle - beta / 2;
+		}
+		else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
+			cout << "ZONE 8" << endl;
+
+			float dz = CSIRGURU_FIELD_LIMIT - position.z;
+
+			int alpha = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
+
+			int beta = 360 - 2 * alpha;
+
+			float angle = rand() % beta;
+
+			return angle + 180 - beta / 2;
+		}
+
+		return rand() % 360;
+	}
 };
 
 struct Bomb : public Object {
@@ -1295,17 +1437,41 @@ struct Field {
 		glNormal3f(0, 1, 0);
 
 		glTexCoord2f(1, 1);
-		glVertex3f(50, 0, 50);
+		glVertex3f(100, 0, 100);
 		glTexCoord2f(1, 0);
-		glVertex3f(50, 0, -50);
+		glVertex3f(100, 0, -100);
 		glTexCoord2f(0, 0);
-		glVertex3f(-50, 0, -50);
+		glVertex3f(-100, 0, -100);
 		glTexCoord2f(0, 1);
-		glVertex3f(-50, 0, 50);
+		glVertex3f(-100, 0, 100);
 
 		glEnd();
 
 		glDisable(GL_TEXTURE_2D);
+
+
+		glBegin(GL_QUADS);
+
+		glColor3f(0, 1, 0);
+		glNormal3f(0, 1, 0);
+
+		glVertex3f(CSIRGURU_FIELD_LIMIT, 0.01, CSIRGURU_FIELD_LIMIT);
+		glVertex3f(CSIRGURU_FIELD_LIMIT, 0.01, -CSIRGURU_FIELD_LIMIT);
+		glVertex3f(-CSIRGURU_FIELD_LIMIT, 0.01, -CSIRGURU_FIELD_LIMIT);
+		glVertex3f(-CSIRGURU_FIELD_LIMIT, 0.01, CSIRGURU_FIELD_LIMIT);
+
+		glEnd();
+		glBegin(GL_QUADS);
+
+		glColor3f(1, 0, 0);
+		glNormal3f(0, 1, 0);
+
+		glVertex3f(CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH, 0.02, CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH);
+		glVertex3f(CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH, 0.02, -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH);
+		glVertex3f(-CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH, 0.02, -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH);
+		glVertex3f(-CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH, 0.02, CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH);
+
+		glEnd();
 	}
 
 	void applyTexture() {
@@ -1418,7 +1584,6 @@ struct Scene {
 
 	void addCsirguru() {
 		if (csirguruCount == MAX_CSIRGURU_COUNT) {
-			cout << "csirguru full" << endl;
 			return;
 		}
 
@@ -1433,8 +1598,6 @@ struct Scene {
 			last->next->previous = last;
 			last = last->next;
 		}
-
-		cout << "csirguru added, count: " << csirguruCount << endl;
 	}
 
 	void dropBomb(Vector pos) {
