@@ -874,7 +874,7 @@ struct Csirguru {
 
 	long animPrepareDuration, animAccelerateDuration, animDecelerateDuration;
 	float animPerpareAnkleStart, animPerpareAnkleEnd, animPrepareToeStart, animPrepareToeEnd;
-	float animAccelerateKneeStart, animAccelerateKneeEnd, animAccelerateAnkleStart, animAccelerateAnkleEnd, animAccelerateToeStart, animAccelerateToeEnd;
+	float animAccelerateKneeStart, animAccelerateKneeEnd;
 	float animInAirAnkleStart, animInAirAnkleEnd, animInAirToeStart, animInAirToeEnd;
 	float animDecelerateAnkleStart, animDecelerateAnkleEnd;
 
@@ -902,11 +902,6 @@ struct Csirguru {
 
 		animAccelerateKneeStart = 0.414f;
 		animAccelerateKneeEnd = 1.6f;
-
-		animAccelerateAnkleStart = 30;
-		animAccelerateAnkleEnd = 180;
-		animAccelerateToeStart = 165;
-		animAccelerateToeEnd = 90;
 
 		float bodyAccel = 2 * 1.186f / powf(animAccelerateDuration / 1000.0f, 2);
 		velocity = bodyAccel * animAccelerateDuration / 1000.0f;
@@ -963,6 +958,7 @@ struct Csirguru {
 		long dt = t - timeOfJump;
 
 		if (dt <= animPrepareDuration) {
+			std::cout << "prepare";
 			float d = (float)dt / (float)animPrepareDuration;
 
 			ankleAngle = (animPerpareAnkleEnd - animPerpareAnkleStart) * d + animPerpareAnkleStart;
@@ -975,6 +971,7 @@ struct Csirguru {
 
 		dt -= animPrepareDuration;
 		if (dt <= animAccelerateDuration) {
+			std::cout << "accel";
 
 			float kneeAccel = 2 * (animAccelerateKneeEnd - animAccelerateKneeStart) / powf(animAccelerateDuration / 1000.0f, 2);
 
@@ -994,7 +991,12 @@ struct Csirguru {
 
 		Vector projectilePos = jumpOrigin + getProjectileMotionPos(dt / 1000.0f);
 
-		if (toe.position.y >= 0 && !landed || dt < minTimeInAir) {
+		Vector thighP = projectilePos + Vector(0, -1.6f, 0);
+		Vector legP = thighP + Vector(0, sinf(M_PI / 2 + M_PI) * leg.leg.m, cosf(M_PI / 2 + M_PI) * leg.leg.m);
+		Vector toeP = legP + Vector(0, -sinf(M_PI / 2 - M_PI + toRad(105)) * feet.feet.m, cosf(M_PI / 2 - M_PI + toRad(105)) * feet.feet.m);
+
+		if (toeP.y >= 0 && !landed || dt < minTimeInAir) {
+			std::cout << "inair";
 			position = projectilePos;
 
 			float d = fminf(dt, minTimeInAir) / minTimeInAir;
@@ -1015,13 +1017,13 @@ struct Csirguru {
 
 		if (!toeAnchored) {
 			toeAnchored = true;
+			toe.position.y = 0;
 			position = toe.position;
-			position.y = 0;
 		}
 
 		dt = t - timeOfLanding;
 		if (dt <= animDecelerateDuration) {
-
+			std::cout << "decel" ;
 			float ankleAccel = 2 * (animDecelerateAnkleStart - animDecelerateAnkleEnd) / powf(animDecelerateDuration / 1000.0f, 2);
 
 			ankleAngle = ankleAccel / 2.0f * powf((animDecelerateDuration - dt) / 1000.0f, 2) + animDecelerateAnkleEnd;
@@ -1032,6 +1034,7 @@ struct Csirguru {
 
 		dt -= animDecelerateDuration;
 		if (dt <= animPrepareDuration) {
+			std::cout << "unprep";
 			float d = (float)dt / (float)animPrepareDuration;
 
 			ankleAngle = animPerpareAnkleEnd - (animPerpareAnkleEnd - animPerpareAnkleStart) * d;
@@ -1232,6 +1235,9 @@ struct Csirguru {
 				glRotatef(90, 0, 1, 0);
 				toe.draw(shadow);
 			} glPopMatrix();
+		}
+		else {
+			std::cout << pos.y << std::endl;
 		}
 	}
 
