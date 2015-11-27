@@ -868,16 +868,15 @@ struct Csirguru {
 
 	Vector position, jumpOrigin;
 
-	bool toeAnchored, exploded, jumping;
+	bool toeAnchored, exploded, jumping, landed;
 	float kneeAngle, ankleAngle, toeAngle;
-	long timeOfExplosion, timeOfJump;
+	long timeOfExplosion, timeOfJump, timeOfLanding;
 
-	long animPrepareDuration, animAccelerateDuration;
+	long animPrepareDuration, animAccelerateDuration, animDecelerateDuration;
 	float animPerpareAnkleStart, animPerpareAnkleEnd, animPrepareToeStart, animPrepareToeEnd;
-
 	float animAccelerateAnkleStart, animAccelerateAnkleEnd, animAccelerateToeStart, animAccelerateToeEnd;
-
 	float animInAirAnkleStart, animInAirAnkleEnd, animInAirToeStart, animInAirToeEnd;
+	float animDecelerateAnkleStart, animDecelerateAnkleEnd;
 
 	float velocity, minTimeInAir, jumpAngle;
 
@@ -886,19 +885,19 @@ struct Csirguru {
 		toeAnchored = true;
 		exploded = false;
 		jumping = false;
+		landed = false;
 
 		kneeAngle = toRad(135);
 		ankleAngle = toRad(90);
 		toeAngle = toRad(135);
 
 		animPrepareDuration = 500;
-		animAccelerateDuration = 400;
+		animAccelerateDuration = 400; 
+		animDecelerateDuration = 400;
 
-		//animPerpareAnkleStart = 90;
-		animPerpareAnkleStart = 180;
+		animPerpareAnkleStart = 90;
 		animPerpareAnkleEnd = 30;
-		//animPrepareToeStart = 135;
-		animPrepareToeStart = 90;
+		animPrepareToeStart = 135;
 		animPrepareToeEnd = 165;
 
 		animAccelerateAnkleStart = 30;
@@ -916,6 +915,9 @@ struct Csirguru {
 		animInAirAnkleEnd = 105;
 		animInAirToeStart = 90;
 		animInAirToeEnd = 165;
+
+		animDecelerateAnkleStart = 105;
+		animDecelerateAnkleEnd = 30;
 	}
 
 	void explode(Vector center, long t) {
@@ -955,9 +957,10 @@ struct Csirguru {
 			return;
 		}
 
-		float dt = t - timeOfJump;
+		long dt = t - timeOfJump;
 
 		if (dt <= animPrepareDuration) {
+			std::cout << "1";
 			float d = (float)dt / (float)animPrepareDuration;
 
 			ankleAngle = (animPerpareAnkleEnd - animPerpareAnkleStart) * d + animPerpareAnkleStart;
@@ -970,20 +973,21 @@ struct Csirguru {
 
 		dt -= animPrepareDuration;
 		if (dt <= animAccelerateDuration) {
+			std::cout << "2";
 
 			float ankleAccel = 2 * (animAccelerateAnkleEnd - animAccelerateAnkleStart) / powf(animAccelerateDuration / 1000.0f, 2);
 			float toeAccel = 2 * (animAccelerateToeEnd - animAccelerateToeStart) / powf(animAccelerateDuration / 1000.0f, 2);
 
-			ankleAngle = ankleAccel / 2.0f * powf((float)dt / 1000.0f, 2) + animAccelerateAnkleStart;
-			toeAngle = toeAccel / 2.0f * powf((float)dt / 1000.0f, 2) + animAccelerateToeStart;
+			ankleAngle = ankleAccel / 2.0f * powf(dt / 1000.0f, 2) + animAccelerateAnkleStart;
+			toeAngle = toeAccel / 2.0f * powf(dt / 1000.0f, 2) + animAccelerateToeStart;
 
 			ankleAngle = toRad(ankleAngle);
 			toeAngle = toRad(toeAngle);
 			return;
 		}
 
-		dt -= animAccelerateDuration - 15;
-		if (toeAnchored) {
+		dt -= animAccelerateDuration;
+		if (toeAnchored && !landed) {
 			toeAnchored = false;
 			position = body.position;
 			jumpOrigin = position;
@@ -991,10 +995,11 @@ struct Csirguru {
 
 		Vector projectilePos = jumpOrigin + getProjectileMotionPos(dt / 1000.0f);
 
-		if (toe.position.y >= 0) {
+		if (toe.position.y >= 0 && !landed || dt < minTimeInAir) {
+			std::cout << "3";
 			position = projectilePos;
 
-			float d = fminf(dt, minTimeInAir) / (float)minTimeInAir;
+			float d = fminf(dt, minTimeInAir) / minTimeInAir;
 
 			kneeAngle = M_PI;
 
@@ -1003,14 +1008,46 @@ struct Csirguru {
 
 			ankleAngle = toRad(ankleAngle);
 			toeAngle = toRad(toeAngle);
+
+			timeOfLanding = t;
 			return;
 		}
 
-		toeAnchored = true;
-		position = toe.position;
-		position.y = 0;
+		landed = true;
+
+		if (!toeAnchored) {
+			toeAnchored = true;
+			position = toe.position;
+			position.y = 0;
+		}
+
+		dt = t - timeOfLanding;
+		if (dt <= animDecelerateDuration) {
+
+			std::cout << "4";
+
+			float ankleAccel = 2 * (animDecelerateAnkleStart - animDecelerateAnkleEnd) / powf(animDecelerateDuration / 1000.0f, 2);
+
+			ankleAngle = ankleAccel / 2.0f * powf((animDecelerateDuration - dt) / 1000.0f, 2) + animDecelerateAnkleEnd;
+
+			ankleAngle = toRad(ankleAngle);
+			return;
+		}
+
+		dt -= animDecelerateDuration;
+		if (dt <= animPrepareDuration) {
+			float d = (float)dt / (float)animPrepareDuration;
+
+			ankleAngle = animPerpareAnkleEnd - (animPerpareAnkleEnd - animPerpareAnkleStart) * d;
+			toeAngle = animPrepareToeEnd - (animPrepareToeEnd - animPrepareToeStart) * d;
+
+			ankleAngle = toRad(ankleAngle);
+			toeAngle = toRad(toeAngle);
+			return;
+		}
 
 		jumping = false;
+		landed = false;
 	}
 
 	void draw(long t, bool shadow) {
