@@ -73,7 +73,7 @@ static const float CSIRGURU_FIELD_LIMIT = 20;
 static const float APPROX_JUMP_LENGTH = 4.2f;
 static const float BOMB_DROP_HEIGHT = 10;
 static const float BOMB_MOVE_SPEED = 10;
-static const float CSIRGURU_BOMB_DISTANCE = 2;
+static const float CSIRGURU_BOMB_DISTANCE = 2.5f;
 
 static const float SUN_LIGHT_DIR[] = { -0.7f, 1, 1, 0 };
 static const float SUN_LIGHT_COLOR[] = { 1, 1, 1, 1 };
@@ -882,7 +882,9 @@ struct Csirguru {
 		animDecelerateAnkleEnd = 30;
 	}
 
-	void explode(Vector center, long t) {
+	void explode(long t) {
+		if (exploded) return;
+
 		timeOfExplosion = t;
 		exploded = true;
 
@@ -1362,7 +1364,7 @@ struct Bomb : public Object {
 
 	Bomb() {
 		position = Vector(0, BOMB_DROP_HEIGHT, 0);
-		bomb.r = 1.5f;
+		bomb.r = 1;
 		bomb.slices = 16;
 		bomb.stacks = 16;
 		velocity = 0;
@@ -1535,11 +1537,6 @@ struct Scene {
 		glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
 		glEnable(GL_LIGHT0);
 
-		glPushMatrix();
-		field.draw();
-		glPopMatrix();
-
-		glPushMatrix();
 		Vector bombPos;
 		if (bomb.dropped) {
 			bombPos = bomb.position + bomb.getProjectileMotionPos((t - bomb.timeOfDrop) / 1000.0f);
@@ -1547,6 +1544,12 @@ struct Scene {
 		else {
 			bombPos = bomb.position;
 		}
+
+		glPushMatrix();
+		field.draw();
+		glPopMatrix();
+
+		glPushMatrix();
 		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
 		bomb.draw(false);
 		glPopMatrix();
@@ -1598,9 +1601,31 @@ struct Scene {
 	}
 
 	void dropBomb(long t) {
+		if (bomb.dropped) return;
+
 		bomb.spinAxis = Vector((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
 		bomb.timeOfDrop = t;
 		bomb.dropped = true;
+	}
+
+	void checkBomb(long t) {
+		if (!bomb.dropped) return;
+
+		Vector pos = bomb.position + bomb.getProjectileMotionPos((t - bomb.timeOfDrop) / 1000.0f);
+
+		if (pos.y < bomb.bomb.r) {
+			CsirguruLinkedList* current = first;
+
+			while (current != 0) {
+
+				if ((pos - current->csirguru.position).Length() <= CSIRGURU_BOMB_DISTANCE) {
+					current->csirguru.explode(t);
+				}
+				current = current->next;
+			}
+
+			bomb.dropped = false;
+		}
 	}
 };
 
@@ -1645,8 +1670,6 @@ void onDisplay() {
 	scene.render(elapsedTime);
 	glutSwapBuffers();
 }
-
-bool randomInit = false;
 
 void onKeyboard(unsigned char key, int x, int y) {
 	switch (key) {
@@ -1695,6 +1718,7 @@ void onIdle() {
 	scene.bomb.update((time - elapsedTime) / 1000.0f);
 
 	elapsedTime = time;
+	scene.checkBomb(elapsedTime);
 
 	if (elapsedTime > csirgurusAdded * 1000) {
 		scene.addCsirguru();
