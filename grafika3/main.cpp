@@ -969,7 +969,7 @@ struct Csirguru {
 		Vector legP = thighP + Vector(0, sinf(M_PI / 2 + M_PI) * leg.leg.m, cosf(M_PI / 2 + M_PI) * leg.leg.m);
 		Vector toeP = legP + Vector(0, -sinf(M_PI / 2 - M_PI + toRad(105)) * feet.feet.m, cosf(M_PI / 2 - M_PI + toRad(105)) * feet.feet.m);
 
-		if (toeP.y >= 0 && !landed || dt < minTimeInAir) {
+		if ((toeP.y >= 0 && !landed) || dt < minTimeInAir) {
 			position = projectilePos;
 
 			kneeAngle = M_PI;
@@ -1570,10 +1570,10 @@ struct Scene {
 		}
 
 		float shadow[4][4] = {
-			1, 0, 0, 0,
-			-SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0,
-			0, 0, 1, 0,
-			0, EPSILON, 0, 1
+			{ 1, 0, 0, 0 },
+			{ -SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0 },
+			{ 0, 0, 1, 0 },
+			{ 0, EPSILON, 0, 1 }
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
