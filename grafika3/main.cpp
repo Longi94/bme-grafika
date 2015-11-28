@@ -69,8 +69,11 @@ static const int MAX_CSIRGURU_COUNT = 10;
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
 static const float GRAVITY = 9.81f;
-static const float CSIRGURU_FIELD_LIMIT = 15;
+static const float CSIRGURU_FIELD_LIMIT = 20;
 static const float APPROX_JUMP_LENGTH = 4.2f;
+static const float BOMB_DROP_HEIGHT = 10;
+static const float BOMB_MOVE_SPEED = 10;
+static const float CSIRGURU_BOMB_DISTANCE = 2;
 
 static const float SUN_LIGHT_DIR[] = { -0.7f, 1, 1, 0 };
 static const float SUN_LIGHT_COLOR[] = { 1, 1, 1, 1 };
@@ -142,7 +145,7 @@ float toDeg(float rad) {
 	return rad * (180.0f / M_PI);
 }
 
-/*struct Camera {
+struct Camera {
 	static const int XM = 600;
 	static const int YM = 600;
 
@@ -151,67 +154,7 @@ float toDeg(float rad) {
 	Camera() :eye(Vector()), lookat(Vector()), up(Vector()) {}
 
 	Camera(Vector eye, Vector lookat, Vector up) :eye(eye), lookat(lookat), up(up) {}
-};*/
-
-enum ControllKeys { W, A, S, D, Q, E, keys_num };
-bool keys_down[keys_num];
-
-struct Camera {
-	static const int XM = 600;
-	static const int YM = 600;
-	Vector fwd, pos;
-	const float speed, mouse_speed;
-
-	Camera(float speed = 5, float mouse_speed = 0.002f) : fwd(Vector(0, -0.5f, -1).norm()), pos(0, 10, 20), speed(speed), mouse_speed(mouse_speed) { }
-
-	void updatePos(float dt) {
-		Vector up = Vector(0, 1, 0), right = (fwd % up).norm();
-		up = (right % fwd).norm();
-
-		if (keys_down[W] && !keys_down[S]) {
-			pos = pos + fwd * speed * dt;
-		}
-		else if (keys_down[S] && !keys_down[W]) {
-			pos = pos - fwd * speed * dt;
-		}
-
-		if (keys_down[D] && !keys_down[A]) {
-			pos = pos + right * speed * dt;
-		}
-		else if (keys_down[A] && !keys_down[D]) {
-			pos = pos - right * speed * dt;
-		}
-
-		if (keys_down[Q] && !keys_down[E]) {
-			pos = pos + Vector(0, 1, 0) * speed * dt;
-		}
-		else if (keys_down[E] && !keys_down[Q]) {
-			pos = pos - Vector(0, 1, 0) * speed * dt;
-		}
-	}
-
-	void updateDir(int dx, int dy) {
-		Vector y_axis = Vector(0, 1, 0), right = (fwd % y_axis).norm();
-		Vector up = (right % fwd).norm();
-
-		// Ha teljesen felfele / lefele nĂŠznĂŠnk, akkor ne forduljon ĂĄt a kamera
-		float dot_up_fwd = (y_axis * fwd);
-		if (dot_up_fwd > 0.95f && dy > 0) {
-			dy = 0;
-		}
-		if (dot_up_fwd < -0.95f && dy < 0) {
-			dy = 0;
-		}
-
-		// MĂłdosĂ­tsuk az nĂŠzeti irĂĄnyt
-		fwd = fwd + (right * dx + up * dy) * mouse_speed;
-		fwd = fwd.norm();
-	}
-
-	void applyMatrix() const {
-		gluLookAt(pos.x, pos.y, pos.z, pos.x + fwd.x, pos.y + fwd.y, pos.z + fwd.z, 0, 1, 0);
-	}
-} camera;
+};
 
 struct Cylinder {
 	float r, m;
@@ -971,8 +914,6 @@ struct Csirguru {
 	void animateValues(long t) {
 		if (!jumping) {
 			faceDirection = randomizeDirection();
-			cout << faceDirection << endl;
-			cout << position.x << ", " << position.y << ", " << position.z << endl;
 			timeOfJump = t;
 			jumpOrigin = position;
 			jumping = true;
@@ -1283,7 +1224,6 @@ private:
 	int randomizeDirection() {
 
 		if (position.x > CSIRGURU_FIELD_LIMIT || position.x < -CSIRGURU_FIELD_LIMIT || position.z > CSIRGURU_FIELD_LIMIT || position.z < -CSIRGURU_FIELD_LIMIT) {
-			cout << "OUTSIDE" << endl;
 			int alpha = toDeg(atanf(position.x / position.z));
 			if (position.x > 0) {
 				if (position.z > 0) {
@@ -1308,7 +1248,6 @@ private:
 			float dx = CSIRGURU_FIELD_LIMIT + position.x;
 
 			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-				cout << "ZONE 1" << endl;
 
 				float dz = CSIRGURU_FIELD_LIMIT + position.z;
 
@@ -1322,7 +1261,6 @@ private:
 				return angle - (90 - alpha);
 			}
 			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH){
-				cout << "ZONE 2" << endl;
 
 				float dz = CSIRGURU_FIELD_LIMIT - position.z;
 
@@ -1336,7 +1274,6 @@ private:
 				return angle + beta;
 			}
 			else {
-				cout << "ZONE 3" << endl;
 
 				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
 
@@ -1350,7 +1287,6 @@ private:
 		else if (position.x > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
 			float dx = CSIRGURU_FIELD_LIMIT - position.x;
 			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-				cout << "ZONE 4" << endl;
 
 				float dz = CSIRGURU_FIELD_LIMIT + position.z;
 
@@ -1364,7 +1300,6 @@ private:
 				return angle + 180 + beta;
 			}
 			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
-				cout << "ZONE 5" << endl;
 
 				float dz = CSIRGURU_FIELD_LIMIT - position.z;
 
@@ -1378,7 +1313,6 @@ private:
 				return angle + 90 + alpha;
 			}
 			else {
-				cout << "ZONE 6" << endl;
 
 				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
 
@@ -1389,7 +1323,6 @@ private:
 				return angle + (270 - beta / 2);
 			}
 		} else if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-			cout << "ZONE 7" << endl;
 
 			float dz = CSIRGURU_FIELD_LIMIT + position.z;
 
@@ -1402,7 +1335,6 @@ private:
 			return angle - beta / 2;
 		}
 		else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
-			cout << "ZONE 8" << endl;
 
 			float dz = CSIRGURU_FIELD_LIMIT - position.z;
 
@@ -1419,9 +1351,57 @@ private:
 	}
 };
 
+enum BombControl {W, A, D, Y};
+bool keyDown[4];
+
 struct Bomb : public Object {
+
+	Sphere bomb;
+	bool dropped;
+	long timeOfDrop;
+
+	Bomb() {
+		position = Vector(0, BOMB_DROP_HEIGHT, 0);
+		bomb.r = 1.5f;
+		bomb.slices = 16;
+		bomb.stacks = 16;
+		velocity = 0;
+		directionAngle = 0;
+		angle = -M_PI / 2;
+		dropped = false;
+	}
+
 	void explode() {
 		//loop through csirgurus
+	}
+
+	void draw(bool shadow) {
+		if (shadow) {
+			glColor3f(0, 0, 0);
+		}
+		else {
+			glColor3f(0.3f, 0.3f, 0.3f);
+		}
+
+		bomb.draw();
+	}
+
+	void update(float dt) {
+		if (dropped) return;
+
+		if (keyDown[W] && !keyDown[Y]) {
+			position.z = fmaxf(position.z + -1 * dt * BOMB_MOVE_SPEED, -CSIRGURU_FIELD_LIMIT);
+		}
+		else if (keyDown[Y] && !keyDown[W]) {
+			position.z = fminf(position.z + 1 * dt * BOMB_MOVE_SPEED, CSIRGURU_FIELD_LIMIT);
+		}
+
+		if (keyDown[D] && !keyDown[A]) {
+			position.x = fminf(position.x + 1 * dt * BOMB_MOVE_SPEED, CSIRGURU_FIELD_LIMIT);
+		}
+		else if (keyDown[A] && !keyDown[D]) {
+			position.x = fmaxf(position.x + -1 * dt * BOMB_MOVE_SPEED, -CSIRGURU_FIELD_LIMIT);
+		}
 	}
 };
 
@@ -1532,24 +1512,24 @@ struct Scene {
 
 	Field field;
 
-	//Camera camera;
+	Bomb bomb;
+
+	Camera camera;
 
 	Scene() {
 		first = 0;
 		last = 0;
 
-		field = Field();
-		//camera = Camera();
-	}
-
-	void init() {
+		camera = Camera(Vector(0, 20, 40), Vector(0, 0, 0), Vector(0, 1, 0));
 	}
 
 	void render(long t) {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		camera.applyMatrix();
+		gluLookAt(camera.eye.x, camera.eye.y, camera.eye.z,
+			camera.lookat.x, camera.lookat.y, camera.lookat.z,
+			camera.up.x, camera.up.y, camera.up.z);
 
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
 		glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
@@ -1557,6 +1537,18 @@ struct Scene {
 
 		glPushMatrix();
 		field.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		Vector bombPos;
+		if (bomb.dropped) {
+			bombPos = bomb.position + bomb.getProjectileMotionPos((t - bomb.timeOfDrop) / 1000.0f);
+		}
+		else {
+			bombPos = bomb.position;
+		}
+		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
+		bomb.draw(false);
 		glPopMatrix();
 
 		CsirguruLinkedList* current = first;
@@ -1574,6 +1566,11 @@ struct Scene {
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
 		glDisable(GL_LIGHT1);
+
+		glPushMatrix();
+		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
+		bomb.draw(true);
+		glPopMatrix();
 
 		CsirguruLinkedList* currentShadow = first;
 		while (currentShadow != 0) {
@@ -1600,8 +1597,10 @@ struct Scene {
 		}
 	}
 
-	void dropBomb(Vector pos) {
-
+	void dropBomb(long t) {
+		bomb.spinAxis = Vector((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
+		bomb.timeOfDrop = t;
+		bomb.dropped = true;
 	}
 };
 
@@ -1616,9 +1615,6 @@ void onInitialization() {
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	scene = Scene();
-	scene.init();
-
-	//scene.camera = Camera(Vector(3, 2, -3), Vector(5, 0, 5), Vector(0, 1, 0));
 
 	//Rendes 3d
 	glEnable(GL_DEPTH_TEST);
@@ -1630,11 +1626,6 @@ void onInitialization() {
 
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(54, 1, 0.2, 200);
-	glMatrixMode(GL_MODELVIEW);
-	camera.applyMatrix();
-	/*gluLookAt(scene.camera.eye.x, scene.camera.eye.y, scene.camera.eye.z,
-		scene.camera.lookat.x, scene.camera.lookat.y, scene.camera.lookat.z,
-		scene.camera.up.x, scene.camera.up.y, scene.camera.up.z);*/
 
 		//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
@@ -1658,49 +1649,21 @@ void onDisplay() {
 bool randomInit = false;
 
 void onKeyboard(unsigned char key, int x, int y) {
-	/*switch (key)
-	{
-	case 'a':
-		//TODO move crosshair left
-		break;
-	case 'w':
-		//TODO move crosshair up
-		break;
-	case 'd':
-		//TODO move crosshair right
-		break;
-	case 'y''s':
-		//TODO move crosshair down
-		break;
-	case ' ':
-		//TODO drop da bomb
-		break;
-	default:
-		//nothing
-		break;
-	}*/
-
 	switch (key) {
 	case 'w': case 'W':
-		keys_down[W] = true;
+		keyDown[W] = true;
 		break;
 	case 's': case 'S':
-		keys_down[S] = true;
+		keyDown[Y] = true;
 		break;
 	case 'a': case 'A':
-		keys_down[A] = true;
+		keyDown[A] = true;
 		break;
 	case 'd': case 'D':
-		keys_down[D] = true;
-		break;
-	case 'q': case 'Q':
-		keys_down[Q] = true;
-		break;
-	case 'e': case 'E':
-		keys_down[E] = true;
+		keyDown[D] = true;
 		break;
 	case ' ':
-		elapsedTime = glutGet(GLUT_ELAPSED_TIME);
+		scene.dropBomb(elapsedTime);
 		break;
 	}
 }
@@ -1708,49 +1671,36 @@ void onKeyboard(unsigned char key, int x, int y) {
 void onKeyboardUp(unsigned char key, int x, int y) {
 	switch (key) {
 	case 'w': case 'W':
-		keys_down[W] = false;
+		keyDown[W] = false;
 		break;
 	case 's': case 'S':
-		keys_down[S] = false;
+		keyDown[Y] = false;
 		break;
 	case 'a': case 'A':
-		keys_down[A] = false;
+		keyDown[A] = false;
 		break;
 	case 'd': case 'D':
-		keys_down[D] = false;
-		break;
-	case 'q': case 'Q':
-		keys_down[Q] = false;
-		break;
-	case 'e': case 'E':
-		keys_down[E] = false;
+		keyDown[D] = false;
 		break;
 	}
 }
 
-int last_x, last_y;
-void onMouse(int button, int state, int x, int y) {
-	last_x = x;
-	last_y = y;
-}
+void onMouse(int button, int state, int x, int y) {}
 
-void onMouseMotion(int x, int y) {
-	camera.updateDir(x - last_x, last_y - y);
-	last_x = x;
-	last_y = y;
-}
+void onMouseMotion(int x, int y) {}
 
 void onIdle() {
-	float time = glutGet(GLUT_ELAPSED_TIME);
-	float dt = (time - elapsedTime) / 1000.0f;
+	long time = glutGet(GLUT_ELAPSED_TIME);
+
+	scene.bomb.update((time - elapsedTime) / 1000.0f);
 
 	elapsedTime = time;
-	if (time > csirgurusAdded * 1000) {
+
+	if (elapsedTime > csirgurusAdded * 1000) {
 		scene.addCsirguru();
 		csirgurusAdded++;
 	}
 
-	camera.updatePos(dt);
 	glutPostRedisplay();
 }
 
