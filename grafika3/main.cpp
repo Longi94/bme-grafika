@@ -1499,9 +1499,6 @@ struct CsirguruLinkedList {
 	CsirguruLinkedList() {
 		next = 0;
 		previous = 0;
-
-		csirguru.position.x = rand() % (2 * (int)CSIRGURU_FIELD_LIMIT) - CSIRGURU_FIELD_LIMIT;
-		csirguru.position.z = rand() % (2 * (int)CSIRGURU_FIELD_LIMIT) - CSIRGURU_FIELD_LIMIT;
 	}
 };
 
@@ -1593,6 +1590,8 @@ struct Scene {
 			last->next->previous = last;
 			last = last->next;
 		}
+
+		last->csirguru.position = Vector(bomb.position.x, 0, bomb.position.z);
 	}
 
 	void dropBomb(long t) {
