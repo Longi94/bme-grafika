@@ -659,7 +659,7 @@ struct CsirguruBody : public Object {
 
 			for (int i = 0; i < cm1.getSize(); i++)
 			{
-				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 4.0f;
+				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 5.0f;
 
 				Vector cmPoint1;
 				Vector cmPoint2;
