@@ -803,10 +803,6 @@ struct CsirguruHead : public Object {
 		head.stacks = 16;
 	}
 
-	void explode(Vector center) {
-
-	}
-
 	void draw(bool shadow) {
 		if (shadow) {
 			glColor3f(0, 0, 0);
