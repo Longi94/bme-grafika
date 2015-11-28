@@ -69,14 +69,16 @@ static const int MAX_CSIRGURU_COUNT = 10;
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
 static const float GRAVITY = 9.81f;
-static const float CSIRGURU_FIELD_LIMIT = 20;
+static const float CSIRGURU_FIELD_LIMIT = 17.5f;
 static const float APPROX_JUMP_LENGTH = 4.2f;
 static const float BOMB_DROP_HEIGHT = 10;
 static const float BOMB_MOVE_SPEED = 10;
-static const float CSIRGURU_BOMB_DISTANCE = 2.5f;
+static const float EXPLOSION_RADIUS = 2.5f;
 
+static const float NULL_VALUES[] = { 0, 0, 0, 0 };
 static const float SUN_LIGHT_DIR[] = { -0.7f, 1, 1, 0 };
 static const float SUN_LIGHT_COLOR[] = { 1, 1, 1, 1 };
+static const float AMBIENT_LIGHT_COLOR[] = { 0.2f, 0.2f, 0.2f, 1 };
 
 struct Vector {
 	float x, y, z;
@@ -1460,30 +1462,6 @@ struct Field {
 		glEnd();
 
 		glDisable(GL_TEXTURE_2D);
-
-
-		glBegin(GL_QUADS);
-
-		glColor3f(0, 1, 0);
-		glNormal3f(0, 1, 0);
-
-		glVertex3f(CSIRGURU_FIELD_LIMIT, 0.01, CSIRGURU_FIELD_LIMIT);
-		glVertex3f(CSIRGURU_FIELD_LIMIT, 0.01, -CSIRGURU_FIELD_LIMIT);
-		glVertex3f(-CSIRGURU_FIELD_LIMIT, 0.01, -CSIRGURU_FIELD_LIMIT);
-		glVertex3f(-CSIRGURU_FIELD_LIMIT, 0.01, CSIRGURU_FIELD_LIMIT);
-
-		glEnd();
-		glBegin(GL_QUADS);
-
-		glColor3f(1, 0, 0);
-		glNormal3f(0, 1, 0);
-
-		glVertex3f(CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH, 0.02, CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH);
-		glVertex3f(CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH, 0.02, -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH);
-		glVertex3f(-CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH, 0.02, -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH);
-		glVertex3f(-CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH, 0.02, CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH);
-
-		glEnd();
 	}
 
 	void applyTexture() {
@@ -1532,7 +1510,8 @@ struct CsirguruLinkedList {
 		next = 0;
 		previous = 0;
 
-		csirguru = Csirguru();
+		csirguru.position.x = rand() % (2 * (int)CSIRGURU_FIELD_LIMIT) - CSIRGURU_FIELD_LIMIT;
+		csirguru.position.z = rand() % (2 * (int)CSIRGURU_FIELD_LIMIT) - CSIRGURU_FIELD_LIMIT;
 	}
 };
 
@@ -1563,8 +1542,6 @@ struct Scene {
 			camera.lookat.x, camera.lookat.y, camera.lookat.z,
 			camera.up.x, camera.up.y, camera.up.z);
 
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
-		glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
 		glEnable(GL_LIGHT0);
 
 		Vector bombPos;
@@ -1598,7 +1575,6 @@ struct Scene {
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
-		glDisable(GL_LIGHT1);
 
 		glPushMatrix();
 		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
@@ -1650,7 +1626,7 @@ struct Scene {
 
 			while (current != 0) {
 
-				if ((pos - Vector(current->csirguru.position.x, pos.y, current->csirguru.position.z)).Length() <= CSIRGURU_BOMB_DISTANCE) {
+				if ((pos - Vector(current->csirguru.position.x, pos.y, current->csirguru.position.z)).Length() <= EXPLOSION_RADIUS) {
 					current->csirguru.explode(t);
 					cout << "csirguru died, count: " << csirguruCount << endl;
 				}
@@ -1661,7 +1637,7 @@ struct Scene {
 		}
 	}
 
-	void removeDeadChickens(long t) {
+	void removeDeadCsirgurus(long t) {
 		CsirguruLinkedList* current = first;
 
 		while (current != 0) {
@@ -1718,14 +1694,14 @@ void onInitialization() {
 
 
 	glMatrixMode(GL_PROJECTION);
-	gluPerspective(54, 1, 0.2, 200);
+	gluPerspective(54, 1, 0.2, 100);
 
 		//Ambiens fény?
 	glEnable(GL_COLOR_MATERIAL);
 	//Irányfényforrás
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
 	glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
-	glEnable(GL_LIGHT0);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
 
 	glEnable(GL_SMOOTH);
 }
@@ -1744,7 +1720,7 @@ void onKeyboard(unsigned char key, int x, int y) {
 	case 'w': case 'W':
 		keyDown[W] = true;
 		break;
-	case 's': case 'S':
+	case 'y': case 'Y':
 		keyDown[Y] = true;
 		break;
 	case 'a': case 'A':
@@ -1764,7 +1740,7 @@ void onKeyboardUp(unsigned char key, int x, int y) {
 	case 'w': case 'W':
 		keyDown[W] = false;
 		break;
-	case 's': case 'S':
+	case 'y': case 'Y':
 		keyDown[Y] = false;
 		break;
 	case 'a': case 'A':
@@ -1787,7 +1763,7 @@ void onIdle() {
 
 	elapsedTime = time;
 	scene.checkBomb(time);
-	scene.removeDeadChickens(time);
+	scene.removeDeadCsirgurus(time);
 
 	if (elapsedTime > csirgurusAdded * 1000) {
 		scene.addCsirguru();
