@@ -498,7 +498,8 @@ struct CsirguruEye : public Object {
 	}
 
 	void draw(bool shadow) {
-		glColor3f(0, 0, 0);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		eyeBall.draw();
 	}
 };
@@ -515,10 +516,12 @@ struct CsirguruBeak : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(1, 0.647f, 0);
+			float color[4] = { 1, 0.647f, 0, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		beak.draw();
 	}
@@ -536,10 +539,12 @@ struct CsirguruComb : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(1, 0, 0);
+			float color[4] = { 1, 0, 0, 1};
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		comb.draw();
 	}
@@ -547,17 +552,19 @@ struct CsirguruComb : public Object {
 
 struct CsirguruBody : public Object {
 
-	int BEZIER_COUNT = 6;
+	int BEZIER_COUNT;
 
 	BezierCurve bezier[6];
-	float t[6] = { 0, 1, 2, 3, 4, 5 };
+	float t[6];
 
 	CsirguruBody() {
+		BEZIER_COUNT = 6;
 
 		int i = 0;
 		Vector bCP = Vector(0, 1.35f, 0.9f);
 		float bAngle = 0;
 		float bSize = 1;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 1;
@@ -565,6 +572,7 @@ struct CsirguruBody : public Object {
 		bCP.z = 0.8f;
 		bAngle = toRad(-30);
 		bSize = 1;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 2;
@@ -572,6 +580,7 @@ struct CsirguruBody : public Object {
 		bCP.z = 0.4f;
 		bAngle = toRad(-50);
 		bSize = 2;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 3;
@@ -579,6 +588,7 @@ struct CsirguruBody : public Object {
 		bCP.z = 0;
 		bAngle = toRad(-90);
 		bSize = 2.3f;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 4;
@@ -586,6 +596,7 @@ struct CsirguruBody : public Object {
 		bCP.z = -0.4f;
 		bAngle = toRad(-130);
 		bSize = 1.5f;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
 		i = 5;
@@ -593,6 +604,7 @@ struct CsirguruBody : public Object {
 		bCP.z = -0.8f;
 		bAngle = toRad(-180);
 		bSize = 2 * EPSILON;
+		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
 	}
 
@@ -601,10 +613,12 @@ struct CsirguruBody : public Object {
 		float bstep = 1.0f / 20.0f;
 
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(0.9f, 0.9f, 0.9f);
+			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 
 		CatmullRom cm1;
@@ -693,10 +707,12 @@ struct CsirguruThigh : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(0.9f, 0.9f, 0.9f);
+			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		joint.draw();
 		thigh.draw();
@@ -720,10 +736,12 @@ struct CsirguruLeg : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(1, 0.647f, 0);
+			float color[4] = { 1, 0.647f, 0, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		leg.draw();
 		joint.draw();
@@ -742,10 +760,12 @@ struct CsirguruFeet : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(1, 0.647f, 0);
+			float color[4] = { 1, 0.647f, 0, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		feet.draw();
 	}
@@ -763,10 +783,12 @@ struct CsirguruToe : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(1, 0.647f, 0);
+			float color[4] = { 1, 0.647f, 0, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		toe.draw();
 	}
@@ -784,10 +806,12 @@ struct CsirguruHead : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(0.9f, 0.9f, 0.9f);
+			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 		head.draw();
 	}
@@ -1380,10 +1404,12 @@ struct Bomb : public Object {
 
 	void draw(bool shadow) {
 		if (shadow) {
-			glColor3f(0, 0, 0);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
 		}
 		else {
-			glColor3f(0.3f, 0.3f, 0.3f);
+			float color[4] = { 0.3f, 0.3f, 0.3f, 1 };
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 
 		bomb.draw();
@@ -1416,7 +1442,9 @@ struct Field {
 
 		glBegin(GL_QUADS);
 
-		glColor3f(1, 1, 1);
+		float color[4] = { 1, 1, 1, 1 };
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, color);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		glNormal3f(0, 1, 0);
 
 		glTexCoord2f(1, 1);
@@ -1485,7 +1513,7 @@ struct Scene {
 	CsirguruLinkedList* first;
 	CsirguruLinkedList* last;
 	
-	int csirguruCount = 0;
+	int csirguruCount;
 
 	Field field;
 
@@ -1496,6 +1524,7 @@ struct Scene {
 	Scene() {
 		first = 0;
 		last = 0;
+		csirguruCount = 0;
 		camera = Camera(Vector(0, 20, 40), Vector(0, 0, 0), Vector(0, 1, 0));
 	}
 
@@ -1648,7 +1677,6 @@ void onInitialization() {
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
-	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
 
 	glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
