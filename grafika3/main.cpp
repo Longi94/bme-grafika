@@ -102,10 +102,10 @@ struct Vector {
 	Vector operator-(const Vector& v) {
 		return Vector(x - v.x, y - v.y, z - v.z);
 	}
-	float operator*(const Vector& v) { //dot
+	float operator*(const Vector& v) {
 		return (x * v.x + y * v.y + z * v.z);
 	}
-	Vector operator%(const Vector& v) { //cross
+	Vector operator%(const Vector& v) {
 		return Vector(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
 	}
 	float Length() { return sqrt(x * x + y * y + z * z); }
@@ -162,7 +162,6 @@ struct Cylinder {
 	Cylinder(float r, float m, int slices) : r(r), m(m), slices(slices) {}
 
 	void draw() {
-		//Bottom face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, -1, 0);
 		glVertex3f(0, 0, 0);
@@ -175,7 +174,6 @@ struct Cylinder {
 		}
 		glEnd();
 
-		//Top face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, 1, 0);
 		glVertex3f(0, m, 0);
@@ -188,7 +186,6 @@ struct Cylinder {
 		}
 		glEnd();
 
-		//Sides
 		glBegin(GL_TRIANGLE_STRIP);
 		for (float i = 0; i <= slices; i++)
 		{
@@ -213,7 +210,6 @@ struct Cone {
 	void draw() {
 		float a = cosf(atanf(m / r)) * r;
 
-		//Bottom face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, -1, 0);
 		glVertex3f(0, 0, 0);
@@ -226,7 +222,6 @@ struct Cone {
 		}
 		glEnd();
 
-		//Sides
 		glBegin(GL_TRIANGLE_STRIP);
 		for (float i = 0; i <= slices; i++)
 		{
@@ -286,7 +281,6 @@ struct HalfCylinder {
 	HalfCylinder(float r, float m, int slices) : r(r), m(m), slices(slices) {}
 
 	void draw() {
-		//Bottom face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, -1, 0);
 		glVertex3f(0, 0, 0);
@@ -299,7 +293,6 @@ struct HalfCylinder {
 		}
 		glEnd();
 
-		//Top face
 		glBegin(GL_TRIANGLE_FAN);
 		glNormal3f(0, 1, 0);
 		glVertex3f(0, m, 0);
@@ -312,7 +305,6 @@ struct HalfCylinder {
 		}
 		glEnd();
 
-		//Sides
 		glBegin(GL_TRIANGLE_STRIP);
 		for (float i = 0; i <= slices; i++)
 		{
@@ -495,7 +487,6 @@ struct Object {
 	}
 };
 
-//a CSIRGURU szeme
 struct CsirguruEye : public Object {
 
 	Sphere eyeBall;
@@ -512,7 +503,6 @@ struct CsirguruEye : public Object {
 	}
 };
 
-//a CSIRGURU csőre
 struct CsirguruBeak : public Object {
 
 	Cone beak;
@@ -534,7 +524,6 @@ struct CsirguruBeak : public Object {
 	}
 };
 
-//a CSIRGURU taraja
 struct CsirguruComb : public Object {
 
 	Cone comb;
@@ -556,7 +545,6 @@ struct CsirguruComb : public Object {
 	}
 };
 
-//a CSIGURU teste
 struct CsirguruBody : public Object {
 
 	int BEZIER_COUNT = 6;
@@ -586,7 +574,6 @@ struct CsirguruBody : public Object {
 		bSize = 2;
 		addBezierCircle(i, bCP, bAngle, bSize);
 
-		//This shall be the anchor point
 		i = 3;
 		bCP.y = 0;
 		bCP.z = 0;
@@ -628,7 +615,6 @@ struct CsirguruBody : public Object {
 
 		for (float tb = 0; tb < 1; tb += bstep) {
 
-			//TODO optimize mindent kétszer számol
 			glBegin(GL_TRIANGLE_STRIP);
 
 			cm1 = tb > 0 ? cm2 : CatmullRom();
@@ -690,7 +676,6 @@ private:
 	}
 };
 
-//a CSIRGURU lába
 struct CsirguruThigh : public Object {
 
 	Sphere joint;
@@ -718,7 +703,6 @@ struct CsirguruThigh : public Object {
 	}
 };
 
-//a CSIRGURU lába
 struct CsirguruLeg : public Object {
 
 	Sphere joint;
@@ -809,7 +793,6 @@ struct CsirguruHead : public Object {
 	}
 };
 
-//sexy beast
 struct Csirguru {
 	CsirguruBody body;
 	CsirguruThigh thigh;
@@ -1395,10 +1378,6 @@ struct Bomb : public Object {
 		dropped = false;
 	}
 
-	void explode() {
-		//loop through csirgurus
-	}
-
 	void draw(bool shadow) {
 		if (shadow) {
 			glColor3f(0, 0, 0);
@@ -1658,21 +1637,17 @@ struct Scene {
 Color image[Camera::XM*Camera::YM];
 Scene scene;
 
+long elapsedTime = 0;
 int csirgurusAdded = 0;
 
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
 
-	//Rendes 3d
-	glEnable(GL_DEPTH_TEST);
-	//Normál vaktorokat egység vektorokként kezelni
-	glEnable(GL_NORMALIZE);
-
-
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(54, 1, 0.2, 100);
 
-	//Világítás engedélyezése
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
 
@@ -1686,8 +1661,6 @@ void onInitialization() {
 	glLightfv(GL_LIGHT1, GL_SPECULAR, NULL_VALUES);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, NULL_VALUES);
 }
-
-long elapsedTime = 0;
 
 void onDisplay() {
 	glClearColor(0.5f, 0.8f, 1, 1.0f);
