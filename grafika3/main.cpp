@@ -1532,6 +1532,7 @@ struct Scene {
 			camera.up.x, camera.up.y, camera.up.z);
 
 		glEnable(GL_LIGHT0);
+		glEnable(GL_LIGHT1);
 
 		Vector bombPos;
 		if (bomb.dropped) {
@@ -1562,6 +1563,7 @@ struct Scene {
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
+		glDisable(GL_LIGHT1);
 
 		glPushMatrix();
 		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
@@ -1666,19 +1668,24 @@ void onInitialization() {
 	glEnable(GL_DEPTH_TEST);
 	//Normál vaktorokat egység vektorokként kezelni
 	glEnable(GL_NORMALIZE);
-	//Világítás engedélyezése
-	glEnable(GL_LIGHTING);
 
 
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(54, 1, 0.2, 100);
 
-		//Ambiens fény?
+	//Világítás engedélyezése
 	glEnable(GL_COLOR_MATERIAL);
-	//Irányfényforrás
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
-	glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
+	glEnable(GL_LIGHTING);
+
 	glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, NULL_VALUES);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, NULL_VALUES);
+	glLightfv(GL_LIGHT0, GL_POSITION, NULL_VALUES);
+
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, SUN_LIGHT_COLOR);
+	glLightfv(GL_LIGHT1, GL_POSITION, SUN_LIGHT_DIR);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, NULL_VALUES);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, NULL_VALUES);
 }
 
 long elapsedTime = 0;
