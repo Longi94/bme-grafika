@@ -44,8 +44,6 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
-#include <iostream>
-using namespace std;
 
 #if defined(__APPLE__)                                                                                                                                                                                                            
 #include <OpenGL/gl.h>                                                                                                                                                                                                            
@@ -116,9 +114,6 @@ struct Vector {
 	}
 };
 
-//--------------------------------------------------------
-// Spektrum illetve szin
-//--------------------------------------------------------
 struct Color {
 	float r, g, b;
 
@@ -1230,7 +1225,6 @@ struct Csirguru {
 private:
 	bool isUnderField(Object& obj, float dt) {
 		Vector pos = obj.position + obj.getProjectileMotionPos(dt);
-
 		return pos.y + position.y < 0;
 	}
 
@@ -1526,7 +1520,6 @@ struct Scene {
 	Scene() {
 		first = 0;
 		last = 0;
-
 		camera = Camera(Vector(0, 20, 40), Vector(0, 0, 0), Vector(0, 1, 0));
 	}
 
@@ -1600,14 +1593,11 @@ struct Scene {
 			last->next->previous = last;
 			last = last->next;
 		}
-
-		cout << "csirguru added, count: " << csirguruCount << endl;
 	}
 
 	void dropBomb(long t) {
 		if (bomb.dropped) return;
 
-		bomb.spinAxis = Vector((double)rand() / RAND_MAX, (double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
 		bomb.timeOfDrop = t;
 		bomb.dropped = true;
 	}
@@ -1624,7 +1614,6 @@ struct Scene {
 
 				if ((pos - Vector(current->csirguru.position.x, pos.y, current->csirguru.position.z)).Length() <= EXPLOSION_RADIUS) {
 					current->csirguru.explode(t);
-					cout << "csirguru died, count: " << csirguruCount << endl;
 				}
 				current = current->next;
 			}
@@ -1659,8 +1648,6 @@ struct Scene {
 				current = temp;
 
 				csirguruCount--;
-
-				cout << "csirguru deleted, count: " << csirguruCount << endl;
 			}
 			else {
 				current = current->next;
@@ -1676,10 +1663,6 @@ int csirgurusAdded = 0;
 
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
-
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	scene = Scene();
 
 	//Rendes 3d
 	glEnable(GL_DEPTH_TEST);
@@ -1698,8 +1681,6 @@ void onInitialization() {
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, SUN_LIGHT_COLOR);
 	glLightfv(GL_LIGHT0, GL_POSITION, SUN_LIGHT_DIR);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
-
-	glEnable(GL_SMOOTH);
 }
 
 long elapsedTime = 0;
