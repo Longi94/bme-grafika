@@ -1205,7 +1205,37 @@ struct Csirguru {
 		glPopMatrix();
 	}
 
+	bool canBeRemoved(long t) {
+		if (!exploded) return false;
+		float dt = (t - timeOfExplosion) / 1000.0f;
+
+		if (!isUnderField(body, dt)) return false;
+		if (!isUnderField(thigh, dt)) return false;
+		if (!isUnderField(leg, dt)) return false;
+		if (!isUnderField(feet, dt)) return false;
+		if (!isUnderField(toe, dt)) return false;
+		if (!isUnderField(head, dt)) return false;
+		if (!isUnderField(eyeLeft, dt)) return false;
+		if (!isUnderField(eyeRight, dt)) return false;
+		if (!isUnderField(beak, dt)) return false;
+		if (!isUnderField(comb1, dt)) return false;
+		if (!isUnderField(comb2, dt)) return false;
+		if (!isUnderField(comb3, dt)) return false;
+		if (!isUnderField(comb4, dt)) return false;
+		if (!isUnderField(comb5, dt)) return false;
+		if (!isUnderField(comb6, dt)) return false;
+		if (!isUnderField(comb7, dt)) return false;
+
+		return true;
+	}
+
 private:
+	bool isUnderField(Object& obj, float dt) {
+		Vector pos = obj.position + obj.getProjectileMotionPos(dt);
+
+		return pos.y + position.y < 0;
+	}
+
 	void drawComb(CsirguruComb& comb, Vector& pos, int angle, float dt, bool shadow) {
 		if (pos.y + position.y < 0) return;
 
@@ -1598,6 +1628,8 @@ struct Scene {
 			last->next->previous = last;
 			last = last->next;
 		}
+
+		cout << "csirguru added, count: " << csirguruCount << endl;
 	}
 
 	void dropBomb(long t) {
@@ -1618,13 +1650,49 @@ struct Scene {
 
 			while (current != 0) {
 
-				if ((pos - current->csirguru.position).Length() <= CSIRGURU_BOMB_DISTANCE) {
+				if ((pos - Vector(current->csirguru.position.x, pos.y, current->csirguru.position.z)).Length() <= CSIRGURU_BOMB_DISTANCE) {
 					current->csirguru.explode(t);
+					cout << "csirguru died, count: " << csirguruCount << endl;
 				}
 				current = current->next;
 			}
 
 			bomb.dropped = false;
+		}
+	}
+
+	void removeDeadChickens(long t) {
+		CsirguruLinkedList* current = first;
+
+		while (current != 0) {
+
+			if (current->csirguru.canBeRemoved(t)) {
+
+				if (current->previous != 0) {
+					current->previous->next = current->next;
+				}
+				else {
+					first = current->next;
+				}
+
+				if (current->next != 0) {
+					current->next->previous = current->previous;
+				}
+				else {
+					last = current->previous;
+				}
+
+				CsirguruLinkedList* temp = current->next;
+				delete current;
+				current = temp;
+
+				csirguruCount--;
+
+				cout << "csirguru deleted, count: " << csirguruCount << endl;
+			}
+			else {
+				current = current->next;
+			}
 		}
 	}
 };
@@ -1718,7 +1786,8 @@ void onIdle() {
 	scene.bomb.update((time - elapsedTime) / 1000.0f);
 
 	elapsedTime = time;
-	scene.checkBomb(elapsedTime);
+	scene.checkBomb(time);
+	scene.removeDeadChickens(time);
 
 	if (elapsedTime > csirgurusAdded * 1000) {
 		scene.addCsirguru();
