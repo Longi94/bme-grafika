@@ -1541,9 +1541,7 @@ struct Scene {
 			bombPos = bomb.position;
 		}
 
-		glPushMatrix();
 		field.draw();
-		glPopMatrix();
 
 		glPushMatrix();
 		glTranslatef(bombPos.x, bombPos.y, bombPos.z);
