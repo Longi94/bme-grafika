@@ -517,6 +517,7 @@ struct CsirguruBeak : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 1, 0.647f, 0, 1 };
@@ -540,6 +541,7 @@ struct CsirguruComb : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 1, 0, 0, 1};
@@ -614,6 +616,7 @@ struct CsirguruBody : public Object {
 
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
@@ -708,6 +711,7 @@ struct CsirguruThigh : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
@@ -737,6 +741,7 @@ struct CsirguruLeg : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 1, 0.647f, 0, 1 };
@@ -761,6 +766,7 @@ struct CsirguruFeet : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 1, 0.647f, 0, 1 };
@@ -784,6 +790,7 @@ struct CsirguruToe : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 1, 0.647f, 0, 1 };
@@ -807,6 +814,7 @@ struct CsirguruHead : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 0.9f, 0.9f, 0.9f, 1 };
@@ -1405,6 +1413,7 @@ struct Bomb : public Object {
 	void draw(bool shadow) {
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, NULL_VALUES);
 		}
 		else {
 			float color[4] = { 0.3f, 0.3f, 0.3f, 1 };
