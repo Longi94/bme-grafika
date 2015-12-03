@@ -428,8 +428,8 @@ struct BezierCurve {
 	}
 
 	Vector getDerivative(float t) {
-		if (t == 0) {
-			t += EPSILON;
+		if (t < EPSILON) {
+			t = EPSILON;
 		}
 		Vector r = Vector();
 
