@@ -62,7 +62,7 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
-static const int MAX_CSIRGURU_COUNT = 10;
+static const int MAX_CSIRGURU_COUNT = 1;
 
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
@@ -612,7 +612,7 @@ struct CsirguruBody : public Object {
 
 	void draw(bool shadow) {
 
-		float bstep = 1.0f / 20.0f;
+		float bstep = 1 / 20.0f;
 
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
@@ -630,34 +630,36 @@ struct CsirguruBody : public Object {
 		CatmullRom cmNormal1;
 		CatmullRom cmNormal2;
 
-		for (float tb = 0; tb < 1; tb += bstep) {
+		for (int i = 0; i < 20; i++) {
+
+			float tb = i * bstep;
+
+			cm1 = i > 0 ? cm2 : CatmullRom();
+			cm2 = CatmullRom();
+
+			for (int j = 0; j < BEZIER_COUNT; j++)
+			{
+				if (i == 0) {
+					cm1.addControlPoint(bezier[j].getBezierCruvePoint(tb), t[j]);
+				}
+				cm2.addControlPoint(bezier[j].getBezierCruvePoint(tb + bstep), t[j]);
+			}
+
+			cmNormal1 = i > 0 ? cmNormal2 : CatmullRom();
+			cmNormal2 = CatmullRom();
+			for (int j = 0; j < BEZIER_COUNT; j++)
+			{
+				if (i == 0) {
+					cmNormal1.addControlPoint(bezier[j].getDerivative(tb - EPSILON) % cm1.getDerivative(j, t[j] - EPSILON), t[j]);
+				}
+				cmNormal2.addControlPoint(bezier[j].getDerivative(tb + bstep - EPSILON) % cm2.getDerivative(j, t[j] - EPSILON), t[j]);
+			}
 
 			glBegin(GL_TRIANGLE_STRIP);
 
-			cm1 = tb > 0 ? cm2 : CatmullRom();
-			cm2 = CatmullRom();
-
-			for (int i = 0; i < BEZIER_COUNT; i++)
+			for (int j = 0; j < cm1.getSize() - 1; j++)
 			{
-				if (tb == 0) {
-					cm1.addControlPoint(bezier[i].getBezierCruvePoint(tb), t[i]);
-				}
-				cm2.addControlPoint(bezier[i].getBezierCruvePoint(tb + bstep), t[i]);
-			}
-
-			cmNormal1 = tb > 0 ? cmNormal2 : CatmullRom();
-			cmNormal2 = CatmullRom();
-			for (int i = 0; i < BEZIER_COUNT; i++)
-			{
-				if (tb == 0) {
-					cmNormal1.addControlPoint(bezier[i].getDerivative(tb) % cm1.getDerivative(i, t[i] - EPSILON), t[i]);
-				}
-				cmNormal2.addControlPoint(bezier[i].getDerivative(tb + bstep) % cm2.getDerivative(i, t[i] - EPSILON), t[i]);
-			}
-
-			for (int i = 0; i < cm1.getSize(); i++)
-			{
-				float step = (cm1.getT(i + 1) - cm1.getT(i)) / 5.0f;
+				float step = (cm1.getT(j + 1) - cm1.getT(j)) / 5.0f;
 
 				Vector cmPoint1;
 				Vector cmPoint2;
@@ -665,12 +667,14 @@ struct CsirguruBody : public Object {
 				Vector normal1;
 				Vector normal2;
 
-				for (float t = cm1.getT(i); t <= cm1.getT(i + 1); t += step) {
-					cmPoint1 = cm1.getHermiteCurvePoint(i, t);
-					cmPoint2 = cm2.getHermiteCurvePoint(i, t);
+				for (int k = 0; k <= 5; k++) {
+					float t = k * step + cm1.getT(j);
+					
+					cmPoint1 = cm1.getHermiteCurvePoint(j, t);
+					cmPoint2 = cm2.getHermiteCurvePoint(j, t);
 
-					normal1 = cmNormal1.getHermiteCurvePoint(i, t);
-					normal2 = cmNormal2.getHermiteCurvePoint(i, t);
+					normal1 = cmNormal1.getHermiteCurvePoint(j, t);
+					normal2 = cmNormal2.getHermiteCurvePoint(j, t);
 
 					glNormal3f(normal1.x, normal1.y, normal1.z);
 					glVertex3f(cmPoint1.x, cmPoint1.y, cmPoint1.z);
@@ -1681,6 +1685,8 @@ int csirgurusAdded = 0;
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
 
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(54, 1, 0.2, 100);
 
@@ -1701,6 +1707,7 @@ void onInitialization() {
 
 void onDisplay() {
 	glClearColor(0.5f, 0.8f, 1, 1.0f);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	scene.render(elapsedTime);
 	glutSwapBuffers();
@@ -1756,7 +1763,7 @@ void onIdle() {
 	scene.checkBomb(time);
 	scene.removeDeadCsirgurus(time);
 
-	if (elapsedTime > csirgurusAdded * 1000) {
+	if (time > csirgurusAdded * 1000) {
 		scene.addCsirguru();
 		csirgurusAdded++;
 	}
