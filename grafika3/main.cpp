@@ -1277,128 +1277,11 @@ private:
 
 	int randomizeDirection() {
 
-		if (position.x > CSIRGURU_FIELD_LIMIT || position.x < -CSIRGURU_FIELD_LIMIT || position.z > CSIRGURU_FIELD_LIMIT || position.z < -CSIRGURU_FIELD_LIMIT) {
-			int alpha = toDeg(atanf(position.x / position.z));
-			if (position.x > 0) {
-				if (position.z > 0) {
-					return alpha + 180;
-				}
-				else {
-					return alpha - 90;
-				}
-			}
-			else {
-				if (position.z > 0) {
-					return alpha + 90;
-				}
-				else {
-					return 90 - alpha;
-				}
-			}
-		}
-
-		if (position.x < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-
-			float dx = CSIRGURU_FIELD_LIMIT + position.x;
-
-			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-
-				float dz = CSIRGURU_FIELD_LIMIT + position.z;
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-				int gamma = 270 - alpha - beta;
-
-				int angle = rand() % gamma;
-
-				return angle - (90 - alpha);
-			}
-			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH){
-
-				float dz = CSIRGURU_FIELD_LIMIT - position.z;
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-				int gamma = 270 - alpha - beta;
-
-				int angle = rand() % gamma;
-
-				return angle + beta;
-			}
-			else {
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-
-				int beta = 360 - 2 * alpha;
-
-				float angle = rand() % beta;
-
-				return angle - (beta / 2 - 90);
-			}
-		}
-		else if (position.x > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
-			float dx = CSIRGURU_FIELD_LIMIT - position.x;
-			if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-
-				float dz = CSIRGURU_FIELD_LIMIT + position.z;
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-				int gamma = 270 - alpha - beta;
-
-				int angle = rand() % gamma;
-
-				return angle + 180 + beta;
-			}
-			else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
-
-				float dz = CSIRGURU_FIELD_LIMIT - position.z;
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-				int beta = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-				int gamma = 270 - alpha - beta;
-
-				int angle = rand() % gamma;
-
-				return angle + 90 + alpha;
-			}
-			else {
-
-				int alpha = (int)toDeg(acosf(dx / APPROX_JUMP_LENGTH));
-
-				int beta = 360 - 2 * alpha;
-
-				float angle = rand() % beta;
-
-				return angle + (270 - beta / 2);
-			}
-		} else if (position.z < -CSIRGURU_FIELD_LIMIT + APPROX_JUMP_LENGTH) {
-
-			float dz = CSIRGURU_FIELD_LIMIT + position.z;
-
-			int alpha = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-			int beta = 360 - 2 * alpha;
-
-			float angle = rand() % beta;
-
-			return angle - beta / 2;
-		}
-		else if (position.z > CSIRGURU_FIELD_LIMIT - APPROX_JUMP_LENGTH) {
-
-			float dz = CSIRGURU_FIELD_LIMIT - position.z;
-
-			int alpha = (int)toDeg(acosf(dz / APPROX_JUMP_LENGTH));
-
-			int beta = 360 - 2 * alpha;
-
-			float angle = rand() % beta;
-
-			return angle + 180 - beta / 2;
+		if (position.x > CSIRGURU_FIELD_LIMIT ||
+			position.x < -CSIRGURU_FIELD_LIMIT ||
+			position.z > CSIRGURU_FIELD_LIMIT ||
+			position.z < -CSIRGURU_FIELD_LIMIT) {
+			return faceDirection + 180;
 		}
 
 		return rand() % 360;
@@ -1588,7 +1471,7 @@ struct Scene {
 			{ 1, 0, 0, 0 },
 			{ -SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0 },
 			{ 0, 0, 1, 0 },
-			{ 0, 0.02, 0, 1 }
+			{ 0, 0.001, 0, 1 }
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
