@@ -62,11 +62,11 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Innentol modosithatod...
 
-static const int MAX_CSIRGURU_COUNT = 1;
+static const int MAX_CSIRGURU_COUNT = 10;
 
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
-static const float GRAVITY = 98.1f;
+static const float GRAVITY = 9.81f;
 static const float CSIRGURU_FIELD_LIMIT = 17.5f;
 static const float APPROX_JUMP_LENGTH = 4.2f;
 static const float BOMB_DROP_HEIGHT = 10;
@@ -671,11 +671,11 @@ struct CsirguruBody : public Object {
 					if (k != 5) {
 						float t = k * step + cm1.getT(j);
 
-						cmPoint1 = cm1.getHermiteCurvePoint(j, t);
-						cmPoint2 = cm2.getHermiteCurvePoint(j, t);
+						cmPoint1 = cm1.getHermiteCurvePoint(j, t - EPSILON);
+						cmPoint2 = cm2.getHermiteCurvePoint(j, t - EPSILON);
 
-						normal1 = cmNormal1.getHermiteCurvePoint(j, t);
-						normal2 = cmNormal2.getHermiteCurvePoint(j, t);
+						normal1 = cmNormal1.getHermiteCurvePoint(j, t - EPSILON);
+						normal2 = cmNormal2.getHermiteCurvePoint(j, t - EPSILON);
 					}
 					else {
 						cmPoint1 = cm1.points[j + 1];
@@ -1078,16 +1078,7 @@ struct Csirguru {
 
 		float dt = (t - timeOfExplosion) / 1000.0f;
 
-		Vector pos = body.position;
-		if (exploded) pos = body.position + body.getProjectileMotionPos(dt);
-
-		if (pos.y + position.y >= 0) {
-			glPushMatrix(); {
-				glTranslatef(pos.x, pos.y, pos.z);
-				if (exploded) glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
-				body.draw(shadow);
-			} glPopMatrix();
-		}
+		Vector pos;
 
 		pos = head.position;
 		if (exploded) pos = head.position + head.getProjectileMotionPos(dt);
@@ -1220,6 +1211,17 @@ struct Csirguru {
 				}
 				glRotatef(90, 0, 1, 0);
 				toe.draw(shadow);
+			} glPopMatrix();
+		}
+
+		pos = body.position;
+		if (exploded) pos = body.position + body.getProjectileMotionPos(dt);
+
+		if (pos.y + position.y >= 0) {
+			glPushMatrix(); {
+				glTranslatef(pos.x, pos.y, pos.z);
+				if (exploded) glRotatef(360.0f * dt, body.spinAxis.x, body.spinAxis.y, body.spinAxis.z);
+				body.draw(shadow);
 			} glPopMatrix();
 		}
 
@@ -1586,7 +1588,7 @@ struct Scene {
 			{ 1, 0, 0, 0 },
 			{ -SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0 },
 			{ 0, 0, 1, 0 },
-			{ 0, EPSILON, 0, 1 }
+			{ 0, 0.02, 0, 1 }
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
@@ -1693,8 +1695,6 @@ int csirgurusAdded = 0;
 
 void onInitialization() {
 	glViewport(0, 0, Camera::XM, Camera::YM);
-
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	glMatrixMode(GL_PROJECTION);
 	gluPerspective(54, 1, 0.2, 100);
