@@ -559,6 +559,9 @@ struct CsirguruBody : public Object {
 	BezierCurve bezier[6];
 	float t[6];
 
+	CatmullRom cm[20];
+	CatmullRom cmNormal[20];
+
 	CsirguruBody() {
 		BEZIER_COUNT = 6;
 
@@ -608,11 +611,26 @@ struct CsirguruBody : public Object {
 		bSize = 2 * EPSILON;
 		t[i] = i;
 		addBezierCircle(i, bCP, bAngle, bSize);
+
+		float bstep = 1 / 20.0f;
+		for (int i = 0; i < 20; i++) {
+
+			float tb = i * bstep;
+
+			cm[i] = CatmullRom();
+			cmNormal[i] = CatmullRom();
+
+			for (int j = 0; j < BEZIER_COUNT; j++) {
+				cm[i].addControlPoint(bezier[j].getBezierCruvePoint(tb), t[j]);
+			}
+
+			for (int j = 0; j < BEZIER_COUNT; j++) {
+				cmNormal[i].addControlPoint(bezier[j].getDerivative(tb - EPSILON) % cm[i].getDerivative(j, t[j] - EPSILON), t[j]);
+			}
+		}
 	}
 
 	void draw(bool shadow) {
-
-		float bstep = 1 / 20.0f;
 
 		if (shadow) {
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, NULL_VALUES);
@@ -624,38 +642,15 @@ struct CsirguruBody : public Object {
 			glMaterialfv(GL_FRONT, GL_AMBIENT, color);
 		}
 
-		CatmullRom cm1;
-		CatmullRom cm2;
-
-		CatmullRom cmNormal1;
-		CatmullRom cmNormal2;
-
 		for (int i = 0; i < 20; i++) {
 
-			float tb = i * bstep;
-
-			cm1 = i > 0 ? cm2 : CatmullRom();
-			cm2 = CatmullRom();
-
-			for (int j = 0; j < BEZIER_COUNT; j++)
-			{
-				if (i == 0) {
-					cm1.addControlPoint(bezier[j].getBezierCruvePoint(tb), t[j]);
-				}
-				cm2.addControlPoint(bezier[j].getBezierCruvePoint(tb + bstep), t[j]);
-			}
-
-			cmNormal1 = i > 0 ? cmNormal2 : CatmullRom();
-			cmNormal2 = CatmullRom();
-			for (int j = 0; j < BEZIER_COUNT; j++)
-			{
-				if (i == 0) {
-					cmNormal1.addControlPoint(bezier[j].getDerivative(tb - EPSILON) % cm1.getDerivative(j, t[j] - EPSILON), t[j]);
-				}
-				cmNormal2.addControlPoint(bezier[j].getDerivative(tb + bstep - EPSILON) % cm2.getDerivative(j, t[j] - EPSILON), t[j]);
-			}
-
 			glBegin(GL_TRIANGLE_STRIP);
+
+			CatmullRom cm1 = cm[i];
+			CatmullRom cm2 = i == 19 ? cm[0] : cm[i + 1];
+
+			CatmullRom cmNormal1 = cmNormal[i];
+			CatmullRom cmNormal2 = i == 19 ? cmNormal[0] : cmNormal[i + 1];
 
 			for (int j = 0; j < cm1.getSize() - 1; j++)
 			{
