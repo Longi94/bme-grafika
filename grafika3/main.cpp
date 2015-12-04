@@ -66,7 +66,7 @@ static const int MAX_CSIRGURU_COUNT = 1;
 
 static const float HEAD_RADIUS = 0.5f;
 static const float EPSILON = 0.001f;
-static const float GRAVITY = 9.81f;
+static const float GRAVITY = 98.1f;
 static const float CSIRGURU_FIELD_LIMIT = 17.5f;
 static const float APPROX_JUMP_LENGTH = 4.2f;
 static const float BOMB_DROP_HEIGHT = 10;
@@ -668,13 +668,22 @@ struct CsirguruBody : public Object {
 				Vector normal2;
 
 				for (int k = 0; k <= 5; k++) {
-					float t = k * step + cm1.getT(j);
-					
-					cmPoint1 = cm1.getHermiteCurvePoint(j, t);
-					cmPoint2 = cm2.getHermiteCurvePoint(j, t);
+					if (k != 5) {
+						float t = k * step + cm1.getT(j);
 
-					normal1 = cmNormal1.getHermiteCurvePoint(j, t);
-					normal2 = cmNormal2.getHermiteCurvePoint(j, t);
+						cmPoint1 = cm1.getHermiteCurvePoint(j, t);
+						cmPoint2 = cm2.getHermiteCurvePoint(j, t);
+
+						normal1 = cmNormal1.getHermiteCurvePoint(j, t);
+						normal2 = cmNormal2.getHermiteCurvePoint(j, t);
+					}
+					else {
+						cmPoint1 = cm1.points[j + 1];
+						cmPoint2 = cm2.points[j + 1];
+
+						normal1 = cmNormal1.points[j + 1];
+						normal2 = cmNormal2.points[j + 1];
+					}
 
 					glNormal3f(normal1.x, normal1.y, normal1.z);
 					glVertex3f(cmPoint1.x, cmPoint1.y, cmPoint1.z);
