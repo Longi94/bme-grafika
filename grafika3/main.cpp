@@ -1438,6 +1438,16 @@ struct Scene {
 			camera.lookat.x, camera.lookat.y, camera.lookat.z,
 			camera.up.x, camera.up.y, camera.up.z);
 
+		glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, NULL_VALUES);
+		glLightfv(GL_LIGHT0, GL_SPECULAR, NULL_VALUES);
+		glLightfv(GL_LIGHT0, GL_POSITION, NULL_VALUES);
+
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, SUN_LIGHT_COLOR);
+		glLightfv(GL_LIGHT1, GL_POSITION, SUN_LIGHT_DIR);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, NULL_VALUES);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, NULL_VALUES);
+
 		glEnable(GL_LIGHT0);
 		glEnable(GL_LIGHT1);
 
@@ -1580,16 +1590,6 @@ void onInitialization() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_LIGHTING);
-
-	glLightfv(GL_LIGHT0, GL_AMBIENT, AMBIENT_LIGHT_COLOR);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, NULL_VALUES);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, NULL_VALUES);
-	glLightfv(GL_LIGHT0, GL_POSITION, NULL_VALUES);
-
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, SUN_LIGHT_COLOR);
-	glLightfv(GL_LIGHT1, GL_POSITION, SUN_LIGHT_DIR);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, NULL_VALUES);
-	glLightfv(GL_LIGHT1, GL_AMBIENT, NULL_VALUES);
 }
 
 void onDisplay() {
