@@ -1476,7 +1476,7 @@ struct Scene {
 			{ 1, 0, 0, 0 },
 			{ -SUN_LIGHT_DIR[0] / SUN_LIGHT_DIR[1], 0, -SUN_LIGHT_DIR[2] / SUN_LIGHT_DIR[1], 0 },
 			{ 0, 0, 1, 0 },
-			{ 0, EPSILON, 0, 1 }
+			{ 0, 0.05, 0, 1 }
 		};
 		glMultMatrixf(&shadow[0][0]);
 		glDisable(GL_LIGHT0);
